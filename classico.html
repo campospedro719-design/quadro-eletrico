@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quadro Elétrico — tela da sala</title>
+</head>
+<body>
+<title>Quadro Elétrico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
 <style>
@@ -135,44 +137,13 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
 .confetti{position:fixed;top:-20px;width:12px;height:18px;z-index:8;pointer-events:none;animation:fall linear forwards;border-radius:3px}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-/* ---------- modo ao vivo: painel da sala, placar e contagem ---------- */
-.sala{display:flex;align-items:center;gap:14px;background:var(--paper);border:4px solid var(--ink);border-radius:18px;padding:10px 14px}
-.sala img{width:124px;height:124px;display:block;background:#fff;border-radius:6px}
-.sala .lbl{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--panel-dark);margin:0}
-.sala .cod{font-family:var(--display);font-size:2.4rem;line-height:1.1;letter-spacing:.14em;background:var(--ink);color:var(--yellow);border-radius:12px;padding:2px 14px;display:inline-block;margin:4px 0}
-.sala .n{font-family:var(--display);font-size:1.05rem;margin:2px 0 0}
-.banner{background:var(--yellow);border:3px solid var(--ink);border-radius:14px;padding:9px 14px;font-weight:800;margin:0;line-height:1.4}
-.banner.ruim{background:var(--red);color:#fff}
-.team.lider{background:var(--yellow)}
-.contagem{font-family:var(--display);font-size:1.1rem;background:var(--blue);color:#fff;border-radius:999px;padding:4px 14px;white-space:nowrap}
-.contagem.cheio{background:var(--green)}
-.quem{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-weight:800;font-size:.95rem}
-.quem span{border:2px solid var(--ink);border-radius:999px;padding:3px 11px;background:#fff}
-.quem span.ok{background:#dff5e8;border-color:var(--green)}
-.quem span.nok{background:#ffe3e3;border-color:var(--red);opacity:.8}
-.qhead .dir{display:flex;gap:10px;align-items:center}
-@media (max-width:860px){
-  .sala img{width:92px;height:92px}
-  .sala .cod{font-size:1.8rem}
-  svg.world{max-height:none}
-}
 </style>
-</head>
-<body>
 
 <div class="wrap">
   <header>
     <div><h1>Quadro Elétrico</h1><p>Resolva os 5 circuitos do quadro e devolva a energia para a família.</p></div>
-    <div class="sala" id="painelSala">
-      <img src="qr.svg" alt="QR code que abre o jogo no celular" width="124" height="124">
-      <div>
-        <p class="lbl">Aponte a câmera do celular</p>
-        <span class="cod" id="codigo">····</span>
-        <p class="n" id="nJog">0 jogadores</p>
-      </div>
-    </div>
+    <span class="chip">PROTÓTIPO 4</span>
   </header>
-  <p class="banner" id="banner" hidden></p>
 
   <div class="scene" id="scene">
     <svg class="world" viewBox="0 0 1200 510" role="img" aria-label="Casa sem energia ligada à rede, com o quadro de distribuição ampliado ao lado">
@@ -271,7 +242,7 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
 
 <div class="stage" id="stage" hidden>
   <div class="q" role="dialog" aria-modal="true" aria-labelledby="qtitle">
-    <div class="qhead"><div><div class="tag" id="qtag"></div><h2 id="qtitle"></h2></div><div class="dir"><span class="contagem" id="contagem" hidden></span><div class="timer" id="timer">45</div></div></div>
+    <div class="qhead"><div><div class="tag" id="qtag"></div><h2 id="qtitle"></h2></div><div class="timer" id="timer">45</div></div>
     <p class="qtext" id="qtext"></p>
     <div id="qfig"></div>
     <div class="alts" id="alts"></div>
@@ -282,29 +253,21 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
 </div>
 <div id="fx"></div>
 
-<script src="config.js"></script>
-<script src="sala.js"></script>
-<script src="figuras.js"></script>
 <script>
-/* ---------- estado do modo ao vivo ---------- */
-const COD=Sala.novoCodigo();
-let jogadores={}, respostas={}, aoVivo=false, jaRevelou=false, obsSala=null;
-/* Fila de escritas. Sem ela, a limpeza de uma questão pode chegar ao banco
-   DEPOIS da publicação da questão seguinte e apagá-la — o que faz o celular
-   de todo mundo perder a pergunta. Tudo que escreve na sala passa por aqui,
-   na ordem em que foi pedido. */
-let fila=Promise.resolve();
-function enfileira(tarefa,oQue){
-  fila=fila.then(tarefa).catch(e=>aviso(oQue+" não chegou aos celulares ("+e.message+").",true));
-  return fila;
-}
-const escapar=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const TEAMS=["Equipe 1","Equipe 2","Equipe 3","Equipe 4"];
+const graf=`<svg class="graf" viewBox="0 0 320 170" style="max-width:340px;width:100%;margin:0 0 10px">
+<line x1="40" y1="140" x2="300" y2="140" stroke="#22283a" stroke-width="2"/><line x1="40" y1="140" x2="40" y2="10" stroke="#22283a" stroke-width="2"/>
+<polyline fill="none" stroke="#4a7bd8" stroke-width="3" points="40,140 300,36"/>
+<polyline fill="none" stroke="#f0595b" stroke-width="3" stroke-dasharray="7 5" points="${Array.from({length:21},(_,k)=>{const i=k*0.1;const V=4*i+4*i*i;return (40+i*130).toFixed(1)+','+(140-V*5.2).toFixed(1)}).join(' ')}"/>
+<text x="250" y="160">i (A)</text><text x="4" y="16">V (V)</text>
+<text x="40" y="156">0</text><text x="166" y="156">1</text><text x="294" y="156">2</text><text x="20" y="88">10</text><text x="20" y="36">20</text>
+<text x="282" y="62" style="fill:#4a7bd8;font-weight:800">A</text><text x="290" y="20" style="fill:#f0595b;font-weight:800">B</text></svg>`;
 const Q=[
  {n:1,room:1,circ:"Tomadas · sala",lvl:"Compreensão conceitual",t:45,
   text:"Um cabo de cobre de 2,5 mm² é trocado por outro de cobre, de mesmo comprimento, com 6 mm². O que acontece com a resistividade (ρ), a condutividade (σ) e a resistência (R)?",
   alts:[["ρ e R diminuem; σ aumenta","Confunde propriedade do material (ρ) com a do objeto (R)."],["ρ e σ não mudam; R cai para ≈ 42%",""],["ρ e σ não mudam; R aumenta ≈ 2,4 vezes","Inverteu a relação: R é inversamente proporcional à área."],["ρ não muda; σ e R diminuem","σ = 1/ρ: se ρ não muda, σ também não."]],ok:1,
   sol:"ρ e σ dependem só do material (continua cobre). R = ρL/A ⇒ R₂/R₁ = 2,5/6 ≈ 0,42.",gl:"Resistência · Resistividade · Condutividade — R = ρL/A ; σ = 1/ρ"},
- {n:2,room:2,circ:"Iluminação · quarto",lvl:"Interpretação de gráfico",t:60,fig:"graf",
+ {n:2,room:2,circ:"Iluminação · quarto",lvl:"Interpretação de gráfico",t:60,fig:graf,
   text:"O gráfico mostra V × i de dois componentes. Assinale a correta.",
   alts:[["Ambos são ôhmicos, pois V aumenta com i","Ôhmico exige V/i constante (reta pela origem), não só crescer."],["A resistência de B diminui com a corrente","Em B, V/i vai de 8 Ω (1 A) para 12 Ω (2 A): aumenta."],["A é ôhmico (10 Ω); em B, R aumenta com i, como num filamento aquecido por efeito Joule",""],["Em i = 1 A, A e B têm a mesma resistência","Em 1 A: A = 10 Ω, B = 8 Ω. As curvas só se cruzam em 1,5 A."]],ok:2,
   sol:"A: V/i = 10 Ω sempre ⇒ ôhmico. B: 8 Ω em 1 A e 12 Ω em 2 A; o aquecimento (efeito Joule) aumenta a resistividade do metal.",gl:"Resistor · Resistência · DDP · Efeito Joule — V = R·i ; ρ = ρ₀[1 + α(T − T₀)]"},
@@ -331,7 +294,7 @@ const M=[
 ];
 const $=id=>document.getElementById(id);
 let st, cur=null, tick=null, left=0;
-function fresh(){return {fixed:{},powered:false,last:"",kwh:4821}}
+function fresh(){return {score:[0,0,0,0],fixed:{},powered:false,last:"",kwh:4821}}
 let kwhTick=null;
 
 function meterSVG(m){
@@ -354,55 +317,23 @@ function meterSVG(m){
 function openQ(n){
   cur=Q.find(q=>q.n===n); const m=M[n-1];
   $("qtag").textContent=`Questão ${n} · ${cur.lvl}`; $("qtitle").textContent=`Circuito com defeito: ${m.name.toLowerCase()}`;
-  $("qtext").textContent=cur.text; $("qfig").innerHTML=cur.fig?(FIGURAS[cur.fig]||""):"";
+  $("qtext").textContent=cur.text; $("qfig").innerHTML=cur.fig||"";
   $("alts").innerHTML=cur.alts.map((a,i)=>`<div class="alt" id="alt${i}"><span class="k">${"ABCD"[i]}</span><span>${a[0]}<span class="why" hidden>${a[1]}</span></span></div>`).join("");
   $("glossBox").innerHTML=""; $("after").innerHTML="";
   $("actions").innerHTML=`<button class="b" id="bGl">Consultar glossário</button><button class="b hl" id="bRev">Revelar resposta</button><button class="b" id="bClose">Fechar</button>`;
   $("bGl").onclick=()=>{$("glossBox").innerHTML=`<div class="box"><h3>Glossário · Etapa 1</h3>${cur.gl}</div>`};
   $("bRev").onclick=reveal; $("bClose").onclick=closeQ;
-  $("stage").hidden=false; jaRevelou=false; startTimer(cur.t); publicaPergunta(cur,m);
+  $("stage").hidden=false; startTimer(cur.t);
 }
 function startTimer(s){clearInterval(tick);left=s;const t=$("timer");t.textContent=left;t.classList.remove("low");
   tick=setInterval(()=>{left--;t.textContent=Math.max(left,0);if(left<=10)t.classList.add("low");if(left<=0)clearInterval(tick)},1000)}
-async function reveal(){
-  clearInterval(tick); jaRevelou=true; $("contagem").hidden=true;
+function reveal(){
+  clearInterval(tick);
   cur.alts.forEach((a,i)=>{const el=$("alt"+i);el.classList.add(i===cur.ok?"correct":"wrong");el.querySelector(".why").hidden=false});
-  /* Le as respostas DIRETO do banco, em vez de usar a ultima copia
-     sincronizada: ela pode estar ate 1,5 s atrasada, e quem respondeu nos
-     ultimos segundos antes do "Revelar" perderia o ponto. */
-  let res=respostas[cur.n]||{};
-  if(aoVivo){ try{ res=(await Sala.ler("salas/"+COD+"/respostas/"+cur.n))||{} }catch(e){} }
-  /* pontuacao: 10 pelo acerto + ate 5 de bonus por rapidez */
-  const ganhos={};
-  Object.entries(res).forEach(([id,r])=>{
-    if(r&&r.alt===cur.ok){
-      const frac=1-(r.ms||0)/((cur.t||45)*1000);
-      ganhos[id]=10+Math.max(0,Math.min(5,Math.round(5*frac)));
-    }
-  });
-  let quem="";
-  if(aoVivo){
-    const lista=Object.entries(jogadores).map(([id,j])=>{
-      const r=res[id], certo=!!(r&&r.alt===cur.ok);
-      const txt=escapar(j.nome||"?")+(r?(certo?" +"+ganhos[id]:" ✗"):" (sem resposta)");
-      return '<span class="'+(r?(certo?"ok":"nok"):"")+'">'+txt+'</span>';
-    }).join("");
-    quem=lista?'<div class="quem">'+lista+'</div>':"";
-  }
-  $("after").innerHTML='<div class="box"><h3>Resolução · resposta '+"ABCD"[cur.ok]+'</h3>'+cur.sol+'</div>'+quem;
-  $("actions").innerHTML='<button class="b go" id="bNext">Consertar circuito e seguir</button>';
-  $("bNext").onclick=finish;
-  if(aoVivo){
-    const n=cur.n, gab=cur.ok, sol=cur.sol;
-    await enfileira(async()=>{
-      for(const par of Object.entries(ganhos)){
-        const atual=(jogadores[par[0]]&&jogadores[par[0]].pontos)||0;
-        await Sala.mesclar("salas/"+COD+"/jogadores/"+par[0],{pontos:atual+par[1]});
-      }
-      await Sala.gravar("salas/"+COD+"/revelado",{n:n,ok:gab,sol:sol,ganhos:ganhos});
-      await Sala.mesclar("salas/"+COD+"/info",{estado:"revelando"});
-    },"O resultado");
-  }
+  $("after").innerHTML=`<div class="box"><h3>Resolução · resposta ${"ABCD"[cur.ok]}</h3>${cur.sol}</div>
+    <div class="award">Quem acertou?${TEAMS.map((t,i)=>`<label><input type="checkbox" id="aw${i}"> ${t}</label>`).join("")}</div>`;
+  $("actions").innerHTML=`<button class="b go" id="bOk">Maioria acertou: consertar!</button><button class="b bad" id="bZap">Maioria errou: levar choque</button>`;
+  $("bOk").onclick=()=>finish(true); $("bZap").onclick=()=>finish(false);
 }
 function say(t,ms){$("bubbleText").textContent=t;$("bubble").classList.add("show");setTimeout(()=>$("bubble").classList.remove("show"),ms)}
 function flash(t){const d=document.createElement("div");d.className="flash";d.textContent=t;$("fx").appendChild(d);setTimeout(()=>d.remove(),1700)}
@@ -463,7 +394,7 @@ function render(){
   $("meters").innerHTML=M.map(meterSVG).join("");
   $("elecWrap").innerHTML=person(CHARS.elec);
   $("family").innerHTML=[CHARS.pai,CHARS.mae,CHARS.filho].map(person).join("");
-  desenhaPlacar();
+  $("teams").innerHTML=TEAMS.map((t,i)=>`<div class="team">${t}<b>${st.score[i]}</b></div>`).join("");
   const done=Object.keys(st.fixed).length;
   const lcd=$("lcd"); if(st.powered){lcd.textContent="220 V · OK";lcd.classList.remove("err")} else if(st.last){lcd.textContent=st.last;lcd.classList.remove("err")} else {lcd.textContent="FALHA";lcd.classList.add("err")}
   $("progress").textContent=`Circuitos consertados: ${done}/5`;
@@ -472,26 +403,13 @@ function render(){
     const open=()=>openQ(+g.dataset.n); g.onclick=open; g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}};
   });
 }
-function finish(){
-  const n=cur.n, res=respostas[n]||{};
-  const tot=Object.keys(res).length;
-  const certos=Object.values(res).filter(r=>r&&r.alt===cur.ok).length;
-  const bem = tot===0 ? true : certos*2>=tot;   /* empate conta como acerto da turma */
-  closeQ();
-  if(aoVivo)enfileira(async()=>{
-    await Sala.apagar("salas/"+COD+"/pergunta");
-    await Sala.mesclar("salas/"+COD+"/info",{estado:"lobby",circuito:0});
-  },"O fim da questão");
-  const fix=()=>{
-    st.fixed[n]=true; st.last=M[n-1].read;
-    if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/consertados",{[n]:true}),"O conserto do circuito");
-    render();
-    if(Object.keys(st.fixed).length===5) setTimeout(powerOn,1100);
-  };
-  const el=$("electrician");
-  if(bem){ fix(); el.classList.add("fixing"); say("Consertado!",1300); flash("Consertado!"); setTimeout(()=>el.classList.remove("fixing"),1300); }
-  else { el.classList.add("zap"); say("Bzzzt! A maioria errou!",1500); flash("ZZZAP!");
-    setTimeout(()=>{el.classList.remove("zap"); fix(); say("Agora aprendi.",1400);},1500); }
+function finish(ok){
+  TEAMS.forEach((_,i)=>{if($("aw"+i).checked)st.score[i]+=1});
+  const n=cur.n; closeQ();
+  const fix=()=>{st.fixed[n]=true; st.last=M[n-1].read; render(); if(Object.keys(st.fixed).length===5) setTimeout(powerOn,1100)};
+  if(ok){ fix(); const el=$("electrician"); el.classList.add("fixing"); say("Consertado!",1300); flash("Consertado!"); setTimeout(()=>el.classList.remove("fixing"),1300); }
+  else { $("electrician").classList.add("zap"); say("Bzzzt! Errou!",1500); flash("ZZZAP!");
+    setTimeout(()=>{fix(); say("Agora aprendi.",1400);},1500); }
 }
 function powerOn(){
   if(st.powered) return; st.powered=true;
@@ -500,7 +418,7 @@ function powerOn(){
   const T=[[900,()=>{sw.classList.remove("ready");sw.classList.add("on");sc.classList.add("s1")}],
            [1700,()=>sc.classList.add("s2")],
            [2500,()=>sc.classList.add("s3")],
-           [3000,()=>{sc.classList.add("powered");render();kwhTick=setInterval(()=>{st.kwh+=1;$("kwh").textContent=String(st.kwh).padStart(5,"0")},700);flash("Casa energizada!");say("Missão cumprida!",2600);confetti();if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"fim"}),"O encerramento")}]];
+           [3000,()=>{sc.classList.add("powered");render();kwhTick=setInterval(()=>{st.kwh+=1;$("kwh").textContent=String(st.kwh).padStart(5,"0")},700);flash("Casa energizada!");say("Missão cumprida!",2600);confetti()}]];
   T.forEach(([t,f])=>timers.push(setTimeout(f,t)));
 }
 function confetti(){
@@ -510,77 +428,9 @@ function confetti(){
 }
 let timers=[];
 function closeQ(){clearInterval(tick);$("stage").hidden=true}
-$("reset").onclick=async()=>{
-  timers.forEach(clearTimeout);clearInterval(kwhTick);$("kwh").textContent="04821";timers=[];st=fresh();
-  ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
-  $("mainSwitch").className.baseVal="";$("electrician").classList.remove("zap","fixing");
-  cur=null;jaRevelou=false;render();
-  if(!aoVivo)return;
-  await enfileira(async()=>{
-    await Sala.apagar("salas/"+COD+"/respostas");
-    await Sala.apagar("salas/"+COD+"/revelado");
-    await Sala.apagar("salas/"+COD+"/pergunta");
-    await Sala.apagar("salas/"+COD+"/consertados");
-    for(const id of Object.keys(jogadores)) await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0});
-    await Sala.mesclar("salas/"+COD+"/info",{estado:"lobby",circuito:0});
-  },"O placar zerado")
-};
+$("reset").onclick=()=>{timers.forEach(clearTimeout);clearInterval(kwhTick);$("kwh").textContent="04821";timers=[];st=fresh();["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));$("mainSwitch").className.baseVal="";render()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("stage").hidden)closeQ()});
-/* ---------- sala ao vivo ---------- */
-function aviso(txt,ruim){const b=$("banner");b.hidden=false;b.className="banner"+(ruim?" ruim":"");b.textContent=txt}
-function erroRede(e){
-  const b=$("banner");
-  if(!e){ if(b.dataset.rede==="1"){b.hidden=true;b.dataset.rede=""} return }
-  b.dataset.rede="1";b.hidden=false;b.className="banner ruim";
-  b.textContent="Sem conexão com o servidor — os celulares não estão recebendo nada. Tentando de novo…";
-}
-async function abrirSala(){
-  if(!Sala.ligado()){
-    $("painelSala").hidden=true;
-    aviso("Modo local: placar ao vivo desligado (falta preencher o config.js). Para apresentar com equipes no papel, abra classico.html.",false);
-    return;
-  }
-  try{
-    await Sala.gravar("salas/"+COD+"/info",{estado:"lobby",circuito:0,criada:Date.now()});
-    await Sala.gravar("salaAtiva",{codigo:COD,criada:Date.now()});
-    aoVivo=true;
-    $("codigo").textContent=COD;
-    obsSala=Sala.observar("salas/"+COD,d=>{
-      jogadores=(d&&d.jogadores)||{};
-      respostas=(d&&d.respostas)||{};
-      desenhaPlacar();atualizaContagem();
-    },erroRede,1500);
-  }catch(e){
-    $("painelSala").hidden=true;
-    aviso("Não consegui abrir a sala ("+e.message+"). O jogo continua, mas sem celulares.",true);
-  }
-}
-function desenhaPlacar(){
-  const js=Object.entries(jogadores).map(([id,j])=>({id:id,nome:j.nome||"?",p:j.pontos||0}))
-    .sort((a,b)=>b.p-a.p||a.nome.localeCompare(b.nome));
-  if(aoVivo)$("nJog").textContent=js.length===1?"1 jogador":js.length+" jogadores";
-  $("teams").innerHTML=js.length
-    ? js.map((j,i)=>'<div class="team'+(i===0&&j.p>0?" lider":"")+'">'+escapar(j.nome)+"<b>"+j.p+"</b></div>").join("")
-    : '<div class="team">esperando jogadores<b>0</b></div>';
-}
-function publicaPergunta(q,m){
-  if(!aoVivo)return Promise.resolve();
-  return enfileira(async()=>{
-    await Sala.apagar("salas/"+COD+"/revelado");
-    await Sala.gravar("salas/"+COD+"/pergunta",
-      {n:q.n,circ:m.name,enunciado:q.text,alts:q.alts.map(a=>a[0]),t:q.t,fig:q.fig||null});
-    await Sala.mesclar("salas/"+COD+"/info",{estado:"pergunta",circuito:q.n});
-  },"A questão");
-}
-function atualizaContagem(){
-  const el=$("contagem");
-  if(!aoVivo||!cur||$("stage").hidden||jaRevelou){el.hidden=true;return}
-  const res=respostas[cur.n]||{}, r=Object.keys(res).length, t=Object.keys(jogadores).length;
-  el.hidden=false;
-  el.textContent=r+" de "+t+" responderam";
-  el.classList.toggle("cheio",t>0&&r>=t);
-}
-st=fresh(); render(); abrirSala();
+st=fresh(); render();
 </script>
 
 </body>

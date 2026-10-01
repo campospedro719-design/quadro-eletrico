@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#22283a">
+<title>Quadro Elétrico — jogar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800&display=swap">
+<style>
+/* Tela do celular. Mobile-first de verdade: um conteúdo por vez, alvos
+   de toque de 56px+, nada de rolagem horizontal, texto grande o bastante
+   para ler de relance numa sala agitada. */
+:root{
+  --sky:#8fd3e6; --ink:#22283a; --paper:#fffaf0;
+  --red:#f0595b; --green:#3fbf7f; --yellow:#ffd23f; --blue:#4a7bd8; --cinza:#5f6f86;
+  --display:"Fredoka","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --body:"Nunito","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0;background:var(--sky);color:var(--ink);font-family:var(--body);
+  font-size:17px;font-weight:700;
+  padding:calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  min-height:100vh;
+}
+.app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--display);font-size:1.5rem;margin:0;line-height:1.1}
+.card{background:var(--paper);border:4px solid var(--ink);border-radius:20px;padding:16px;box-shadow:0 6px 0 var(--ink)}
+.eu{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--display);font-size:1.05rem}
+.eu .pts{background:var(--ink);color:var(--yellow);border-radius:999px;padding:3px 12px;font-variant-numeric:tabular-nums}
+.eu .pos{background:var(--yellow);border:3px solid var(--ink);border-radius:999px;padding:2px 10px;font-size:.9rem}
+label.campo{display:block;font-size:.95rem;margin-bottom:6px}
+input[type=text]{
+  width:100%;font:800 1.25rem var(--body);padding:14px;border:3px solid var(--ink);
+  border-radius:14px;background:#fff;color:var(--ink);min-height:56px;
+}
+input[type=text]:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button{
+  appearance:none;font:800 1.05rem var(--body);border:3px solid var(--ink);border-radius:999px;
+  padding:16px 20px;min-height:58px;width:100%;background:var(--yellow);color:var(--ink);
+  cursor:pointer;touch-action:manipulation;
+}
+button:disabled{opacity:.5}
+button.go{background:var(--green);color:#fff}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+/* alternativas */
+.alts{display:flex;flex-direction:column;gap:10px}
+.alt{
+  display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
+  background:#fff;border:3px solid var(--ink);border-radius:16px;padding:14px;
+  font:700 1.02rem var(--body);line-height:1.35;min-height:60px;cursor:pointer;
+}
+.alt .k{
+  font-family:var(--display);font-size:1.2rem;flex:none;
+  width:2em;height:2em;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+}
+.alt[aria-pressed=true]{background:var(--yellow);box-shadow:0 0 0 4px var(--ink) inset}
+.alt.certa{background:#dff5e8;border-color:var(--green)}
+.alt.certa .k{background:var(--green)}
+.alt.errada{background:#ffe3e3;border-color:var(--red)}
+.alt.errada .k{background:var(--red)}
+.alt.apagada{opacity:.45}
+.alt:disabled{cursor:default}
+/* cabeçalho da questão */
+.qtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.tag{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--cinza)}
+.timer{
+  font-family:var(--display);font-size:1.8rem;background:var(--ink);color:var(--yellow);
+  border-radius:999px;min-width:3.2ch;text-align:center;padding:2px 14px;font-variant-numeric:tabular-nums
+}
+.timer.baixo{background:var(--red);color:#fff}
+.qtexto{font-size:1.1rem;line-height:1.45;margin:0 0 14px}
+/* figura da questão (ex.: o gráfico V × i) */
+svg.graf{display:block;margin:0 auto 14px;max-width:100%;height:auto;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:6px}
+svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink);font-weight:700}
+/* avisos e estados */
+.aviso{font-family:var(--display);font-size:1.3rem;text-align:center;margin:0}
+.sub{font-size:.95rem;font-weight:700;text-align:center;margin:8px 0 0;color:var(--cinza)}
+.grande{font-family:var(--display);font-size:2.4rem;text-align:center;margin:0}
+.ok{color:var(--green)} .nok{color:var(--red)}
+.pulso{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--green);margin-right:6px}
+.caiu .pulso{background:var(--red)}
+.rede{font-size:.82rem;font-weight:700;color:var(--cinza);text-align:center;margin:0}
+.erro{background:#ffe3e3;border:3px solid var(--red);border-radius:14px;padding:12px;font-size:.9rem;line-height:1.4}
+ol.rank{margin:10px 0 0;padding-left:1.4em;font-size:1.02rem;line-height:1.7}
+ol.rank .meu{background:var(--yellow);border-radius:6px;padding:0 6px}
+.expl{margin:12px 0 0;padding:12px;border:3px dashed var(--ink);border-radius:14px;background:#fff;font-size:.95rem;line-height:1.45;font-weight:700}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <h1>Quadro Elétrico</h1>
+
+  <!-- identidade do jogador, visível em todas as etapas depois de entrar -->
+  <div class="card eu" id="caixaEu" hidden>
+    <span id="meuNome"></span>
+    <span class="pts" id="meusPontos">0</span>
+    <span class="pos" id="minhaPos" hidden></span>
+  </div>
+
+  <div id="tela"></div>
+
+  <p class="rede" id="rede"></p>
+</div>
+
+<script src="config.js"></script>
+<script src="sala.js"></script>
+<script src="figuras.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+const tela = $("#tela");
+const euId = Sala.idJogador();
+
+let sala = null;        // código da sala
+let entrei = false;     // só desenha o jogo depois de registrar o nome
+let eu = { nome: "", pontos: 0 };
+let dados = null;       // conteúdo da sala vindo do banco
+let obs = null;         // observador
+let etapa = "";         // etapa desenhada agora
+let respondi = {};      // { nQuestao: alternativa }
+let vistaEm = {};       // { nQuestao: timestamp local de quando vi }
+let relogio = null;
+
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- memória local (sobrevive a recarregar a página) ---------- */
+const chave = () => `quadro:sala:${sala}`;
+function salvar() {
+  try { localStorage.setItem(chave(), JSON.stringify({ nome: eu.nome, respondi })); } catch (e) {}
+}
+function carregar() {
+  try {
+    const v = JSON.parse(localStorage.getItem(chave()) || "null");
+    if (v) { eu.nome = v.nome || ""; respondi = v.respondi || {}; }
+  } catch (e) {}
+}
+
+/* ---------- entrada: descobrir em qual sala entrar ---------- */
+async function descobrirSala() {
+  const naUrl = new URLSearchParams(location.search).get("sala");
+  if (naUrl) return naUrl.toUpperCase().trim();
+  const ativa = await Sala.ler("salaAtiva");
+  if (ativa && ativa.codigo) {
+    const horas = (Date.now() - (ativa.criada || 0)) / 3.6e6;
+    if (horas < 6) return String(ativa.codigo).toUpperCase();
+  }
+  return null;
+}
+
+async function iniciar() {
+  if (!Sala.ligado()) {
+    return desenhaErro(
+      "Este link ainda não foi configurado.",
+      "Falta ligar o banco de dados em <code>config.js</code>. Sem isso o placar ao vivo não funciona — avise quem montou o jogo."
+    );
+  }
+  tela.innerHTML = `<div class="card"><p class="aviso">Procurando a sala…</p></div>`;
+  let cod;
+  try { cod = await descobrirSala(); }
+  catch (e) { return desenhaErro("Não consegui falar com o servidor.", esc(e.message)); }
+
+  if (!cod) return pedirCodigo();
+  sala = cod;
+  carregar();
+  if (eu.nome) await entrar(eu.nome); else pedirNome();
+  observar();
+}
+
+function pedirCodigo() {
+  tela.innerHTML = `<div class="card">
+    <label class="campo" for="cod">Nenhuma sala aberta agora. Digite o código que está na tela da sala:</label>
+    <input type="text" id="cod" maxlength="4" autocapitalize="characters" autocomplete="off"
+           inputmode="text" placeholder="ex.: BKPT" style="text-align:center;letter-spacing:.3em;font-size:1.8rem">
+    <div style="height:12px"></div>
+    <button class="go" id="irCod">Continuar</button>
+  </div>`;
+  const inp = $("#cod");
+  inp.oninput = () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, ""); };
+  $("#irCod").onclick = async () => {
+    const v = inp.value.trim();
+    if (v.length < 4) return;
+    sala = v;
+    const info = await Sala.ler(`salas/${sala}/info`).catch(() => null);
+    if (!info) {
+      inp.value = "";
+      return desenhaErro("Não achei essa sala.", "Confira o código na tela da sala e tente de novo.", pedirCodigo);
+    }
+    carregar();
+    if (eu.nome) await entrar(eu.nome); else pedirNome();
+    observar();
+  };
+}
+
+function pedirNome() {
+  tela.innerHTML = `<div class="card">
+    <label class="campo" for="nome">Seu nome (é o que vai aparecer no placar da sala):</label>
+    <input type="text" id="nome" maxlength="18" autocomplete="off" placeholder="ex.: Pedro">
+    <div style="height:12px"></div>
+    <button class="go" id="entrar" disabled>Entrar no jogo</button>
+    <p class="sub">Sala <b>${esc(sala)}</b></p>
+  </div>`;
+  const inp = $("#nome"), bt = $("#entrar");
+  inp.oninput = () => { bt.disabled = inp.value.trim().length < 2; };
+  inp.onkeydown = (e) => { if (e.key === "Enter" && !bt.disabled) bt.click(); };
+  bt.onclick = async () => {
+    bt.disabled = true; bt.textContent = "Entrando…";
+    try { await entrar(inp.value.trim()); }
+    catch (e) { bt.disabled = false; bt.textContent = "Entrar no jogo"; desenhaErro("Não consegui entrar.", esc(e.message), pedirNome); }
+  };
+  setTimeout(() => inp.focus(), 50);
+}
+
+async function entrar(nome) {
+  eu.nome = nome;
+  salvar();
+  /* mescla: se eu já tinha pontos (recarreguei a página), eles não se perdem */
+  await Sala.mesclar(`salas/${sala}/jogadores/${euId}`, { nome, entrouEm: Date.now() });
+  const j = await Sala.ler(`salas/${sala}/jogadores/${euId}`).catch(() => null);
+  if (j && typeof j.pontos !== "number") await Sala.mesclar(`salas/${sala}/jogadores/${euId}`, { pontos: 0 });
+  entrei = true;
+  $("#caixaEu").hidden = false;
+  $("#meuNome").textContent = nome;
+  /* desenha na hora, sem esperar a próxima consulta */
+  etapa = "";
+  if (dados) desenha();
+}
+
+/* ---------- acompanhar a sala ---------- */
+function observar() {
+  if (obs) obs.parar();
+  obs = Sala.observar(`salas/${sala}`, (d) => { dados = d; desenha(); }, mostraRede, 1500);
+}
+
+let quedas = 0;
+function mostraRede(err) {
+  const el = $("#rede");
+  if (err) {
+    quedas++;
+    el.className = "rede caiu";
+    el.innerHTML = `<span class="pulso"></span>sem conexão — tentando de novo…`;
+  } else {
+    quedas = 0;
+    el.className = "rede";
+    el.innerHTML = `<span class="pulso"></span>conectado · sala ${esc(sala)}`;
+  }
+}
+
+function desenhaErro(titulo, detalhe, voltar) {
+  tela.innerHTML = `<div class="card"><p class="aviso">${esc(titulo)}</p>
+    <div style="height:10px"></div><div class="erro">${detalhe}</div>
+    ${voltar ? `<div style="height:12px"></div><button id="volta">Tentar de novo</button>` : ""}</div>`;
+  if (voltar) $("#volta").onclick = voltar;
+}
+
+/* ---------- desenho por etapa ---------- */
+function desenha() {
+  /* enquanto o jogador não tiver entrado, a tela é dele (pedir nome ou código):
+     a sincronização não pode apagar o formulário por baixo do dedo dele. */
+  if (!entrei) return;
+  if (!dados || !dados.info) {
+    tela.innerHTML = `<div class="card"><p class="aviso">Aguardando a sala abrir…</p></div>`;
+    return;
+  }
+  const eus = (dados.jogadores || {})[euId];
+  if (eus) {
+    eu.pontos = eus.pontos || 0;
+    $("#meusPontos").textContent = eu.pontos;
+    $("#meuNome").textContent = eus.nome || eu.nome;
+    $("#caixaEu").hidden = false;
+    const pos = posicao();
+    const p = $("#minhaPos");
+    p.hidden = !pos;
+    if (pos) p.textContent = `${pos.lugar}º de ${pos.total}`;
+  }
+
+  const st = dados.info.estado || "lobby";
+  const q = dados.pergunta || null;
+  const marca = `${st}:${q ? q.n : 0}:${dados.revelado ? dados.revelado.n : 0}`;
+  if (marca === etapa) return;   // nada mudou de fato; não redesenha (não perde o toque do dedo)
+  etapa = marca;
+
+  pararRelogio();
+  if (st === "pergunta" && q) return desenhaPergunta(q);
+  if (st === "revelando" && dados.revelado) return desenhaRevelacao(dados.revelado, q);
+  if (st === "fim") return desenhaFim();
+  return desenhaEspera();
+}
+
+function posicao() {
+  const js = Object.entries(dados.jogadores || {});
+  if (js.length < 2) return null;
+  const ord = js.map(([id, j]) => ({ id, p: j.pontos || 0 })).sort((a, b) => b.p - a.p);
+  const i = ord.findIndex((x) => x.id === euId);
+  return i < 0 ? null : { lugar: i + 1, total: ord.length };
+}
+
+function desenhaEspera() {
+  const n = Object.keys(dados.jogadores || {}).length;
+  const feitos = Object.keys(dados.consertados || {}).length;
+  tela.innerHTML = `<div class="card">
+    <p class="aviso">Você está dentro! 🔌</p>
+    <p class="sub">Olhe para a tela da sala. A próxima questão aparece aqui quando o circuito for aberto.</p>
+    <p class="sub">${n} jogador${n === 1 ? "" : "es"} na sala · ${feitos}/5 circuitos consertados</p>
+  </div>`;
+}
+
+function desenhaPergunta(q) {
+  const jaRespondi = respondi[q.n];
+  if (!vistaEm[q.n]) vistaEm[q.n] = Date.now();
+
+  const alts = (q.alts || []).map((t, i) => `
+    <button class="alt" data-i="${i}" aria-pressed="${jaRespondi === i ? "true" : "false"}"
+            ${jaRespondi !== undefined ? "disabled" : ""}>
+      <span class="k">${"ABCD"[i]}</span><span>${esc(t)}</span>
+    </button>`).join("");
+
+  tela.innerHTML = `<div class="card">
+    <div class="qtop">
+      <div><div class="tag">Circuito ${esc(q.circ || q.n)} · questão ${esc(q.n)} de 5</div></div>
+      <div class="timer" id="t">${esc(q.t || 45)}</div>
+    </div>
+    <p class="qtexto">${esc(q.enunciado)}</p>
+    ${q.fig && window.FIGURAS && FIGURAS[q.fig] ? FIGURAS[q.fig] : ""}
+    <div class="alts" id="alts">${alts}</div>
+    <p class="sub" id="status">${jaRespondi !== undefined ? "Resposta enviada! Aguarde a correção." : "Toque na alternativa que você acha certa."}</p>
+  </div>`;
+
+  document.querySelectorAll(".alt").forEach((b) => {
+    b.onclick = () => responder(q, +b.dataset.i);
+  });
+  iniciaRelogio(q);
+}
+
+async function responder(q, i) {
+  if (respondi[q.n] !== undefined) return;
+  respondi[q.n] = i;
+  salvar();
+  document.querySelectorAll(".alt").forEach((b) => {
+    b.disabled = true;
+    b.setAttribute("aria-pressed", +b.dataset.i === i ? "true" : "false");
+    if (+b.dataset.i !== i) b.classList.add("apagada");
+  });
+  $("#status").textContent = "Enviando…";
+  const ms = Date.now() - (vistaEm[q.n] || Date.now());
+  try {
+    await Sala.gravar(`salas/${sala}/respostas/${q.n}/${euId}`, { alt: i, ms });
+    $("#status").textContent = "Resposta enviada! Aguarde a correção.";
+  } catch (e) {
+    $("#status").innerHTML = `<span class="nok">Não saiu. Toque de novo.</span>`;
+    delete respondi[q.n];
+    salvar();
+    document.querySelectorAll(".alt").forEach((b) => { b.disabled = false; b.classList.remove("apagada"); });
+  }
+}
+
+/* O cronômetro conta a partir de quando ESTE celular viu a questão, não do
+   relógio do aparelho — se o celular estiver com a hora errada, tanto faz.
+   Quem decide de verdade quando encerra é a tela da sala. */
+function iniciaRelogio(q) {
+  const total = q.t || 45;
+  const el = $("#t");
+  const passo = () => {
+    const resta = Math.max(0, total - Math.round((Date.now() - vistaEm[q.n]) / 1000));
+    el.textContent = resta;
+    el.classList.toggle("baixo", resta <= 10);
+    if (resta <= 0) pararRelogio();
+  };
+  passo();
+  relogio = setInterval(passo, 250);
+}
+function pararRelogio() { if (relogio) { clearInterval(relogio); relogio = null; } }
+
+function desenhaRevelacao(rev, q) {
+  const minha = respondi[rev.n];
+  const acertei = minha === rev.ok;
+  const semResposta = minha === undefined;
+  const ganhei = (rev.ganhos || {})[euId] || 0;
+
+  const alts = (q && q.alts ? q.alts : []).map((t, i) => {
+    let cls = "alt";
+    if (i === rev.ok) cls += " certa";
+    else if (i === minha) cls += " errada";
+    else cls += " apagada";
+    return `<div class="${cls}"><span class="k">${"ABCD"[i]}</span><span>${esc(t)}</span></div>`;
+  }).join("");
+
+  tela.innerHTML = `<div class="card">
+    <p class="grande ${acertei ? "ok" : "nok"}">${semResposta ? "⏱ Sem resposta" : acertei ? "✓ Acertou!" : "✗ Errou"}</p>
+    ${ganhei ? `<p class="sub"><b>+${ganhei} pontos</b></p>` : `<p class="sub">Nenhum ponto nesta.</p>`}
+    <div style="height:12px"></div>
+    <div class="alts">${alts}</div>
+    ${rev.sol ? `<div class="expl"><b>Por quê:</b> ${esc(rev.sol)}</div>` : ""}
+    ${rank()}
+  </div>`;
+}
+
+function rank() {
+  const js = Object.entries(dados.jogadores || {})
+    .map(([id, j]) => ({ id, nome: j.nome || "?", p: j.pontos || 0 }))
+    .sort((a, b) => b.p - a.p || a.nome.localeCompare(b.nome));
+  if (!js.length) return "";
+  return `<ol class="rank">${js.map((j) =>
+    `<li><span class="${j.id === euId ? "meu" : ""}">${esc(j.nome)} — ${j.p}</span></li>`).join("")}</ol>`;
+}
+
+function desenhaFim() {
+  const js = Object.entries(dados.jogadores || {})
+    .map(([id, j]) => ({ id, nome: j.nome || "?", p: j.pontos || 0 }))
+    .sort((a, b) => b.p - a.p);
+  const meu = js.findIndex((j) => j.id === euId) + 1;
+  tela.innerHTML = `<div class="card">
+    <p class="grande">💡 Casa energizada!</p>
+    <p class="sub">${meu === 1 ? "Você terminou em 1º lugar! 🏆" : meu ? `Você ficou em ${meu}º lugar, com ${eu.pontos} pontos.` : ""}</p>
+    ${rank()}
+  </div>`;
+}
+
+iniciar();
+</script>
+
+</body>
+</html>
