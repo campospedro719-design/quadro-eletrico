@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Quadro Elétrico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: cena cartoon única (quadro de medidores à esquerda → cabo → casa e família à direita), placar e controles abaixo; questão abre num cartão sobreposto. Visual único e chapado, deliberadamente single-theme. */
+:root{
+  --sky:#8fd3e6; --ground:#8fcf5f; --ink:#22283a; --paper:#fffaf0;
+  --panel:#5f6f86; --panel-dark:#46546a;
+  --red:#f0595b; --green:#3fbf7f; --yellow:#ffd23f; --orange:#ff9f43; --blue:#4a7bd8;
+  --display:"Fredoka","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --body:"Nunito","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{background:var(--sky);color:var(--ink);font-family:var(--body);font-size:15px;padding-inline:16px;padding-block:14px;margin:0}
+.wrap{max-width:1680px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);margin:0;line-height:1;color:var(--ink)}
+header p{margin:4px 0 0;font-weight:700}
+.chip{font-family:var(--display);background:var(--ink);color:var(--yellow);padding:4px 12px;border-radius:999px;font-size:.85rem}
+.scene{background:var(--sky);border-radius:22px;overflow:hidden;border:4px solid var(--ink)}
+svg.world{display:block;width:100%;height:auto;max-height:calc(100vh - 190px)}
+svg text{font-family:var(--display)}
+/* disjuntores dos circuitos */
+.brk{cursor:pointer}
+.brk:focus{outline:none}
+.brk:focus-visible .bbody{stroke:var(--yellow);stroke-width:5}
+.brk .bbody{fill:#eef1f5;stroke:var(--ink);stroke-width:3.5}
+.brk.broken:hover .bbody{fill:#fff}
+.brk .lev{transform-box:view-box;transition:transform .5s cubic-bezier(.3,1.6,.5,1),fill .3s}
+.brk.broken .lev{fill:var(--red);transform:translateY(16px)}
+.brk.fixed .lev{fill:var(--green)}
+.brk .bled{fill:var(--red)}
+.brk.broken .bled{animation:blink .6s steps(2) infinite}
+.brk.fixed .bled{fill:var(--green)}
+.brk .spark,.brk .smoke{display:none}
+.brk.broken .spark{display:inline;animation:flick .35s steps(2) infinite}
+.brk.broken .smoke{display:inline;animation:smoke 2.2s ease-out infinite}
+.brk.broken .smoke:nth-of-type(2){animation-delay:1.1s}
+.brk .tagc{fill:var(--yellow)}
+.brk.fixed .tagc{fill:var(--green)}
+@keyframes smoke{0%{opacity:.7;transform:translateY(0) scale(.6)}100%{opacity:0;transform:translateY(-34px) scale(1.4)}}
+.smoke{transform-box:fill-box;transform-origin:50% 50%}
+@keyframes flick{0%{opacity:1}100%{opacity:0}}
+@keyframes blink{0%{opacity:1}100%{opacity:.25}}
+.lcd{fill:#7dffb0;font-variant-numeric:tabular-nums}
+.lcd.err{fill:#ff6b6b;animation:blink .8s steps(2) infinite}
+/* chave geral */
+#mainSwitch .handle{transform-box:view-box;transition:transform .5s}
+#mainSwitch.ready .handle{animation:nudge 1s ease-in-out infinite}
+#mainSwitch.on .handle{transform:translateY(-34px);animation:none}
+@keyframes nudge{50%{transform:translateY(-6px)}}
+/* rede, ramal e entrada da casa */
+.cable{stroke:#111;stroke-width:5;fill:none}
+.flow{stroke:var(--yellow);stroke-width:4;fill:none;stroke-dasharray:14 16;opacity:0}
+.s2 #flowHouse{opacity:1;animation:flow .6s linear infinite}
+.flow.live{display:none}
+@keyframes flow{to{stroke-dashoffset:-30}}
+.kled{fill:var(--green)}
+.powered .kled{animation:blink .5s steps(2) infinite}
+.zoom{transition:stroke .4s}
+.s2 .zoom{stroke:var(--yellow)}
+/* casa */
+.win{fill:#3a4257;transition:fill .6s}
+.powered .win{fill:var(--yellow)}
+.powered .glow{opacity:.55}
+.glow{opacity:0;transition:opacity .8s}
+/* personagens */
+.char{transform-box:fill-box;transform-origin:50% 100%}
+.char .arms-up,.char .happy,.char .brow-happy,.char .hair{display:none}
+.cheerful .happy,.cheerful .brow-happy{display:inline}
+.cheerful .sad,.cheerful .brow-sad{display:none}
+.powered .family .arms-up,.powered .family .happy,.powered .family .brow-happy{display:inline}
+.powered .family .arms-down,.powered .family .sad,.powered .family .brow-sad{display:none}
+.powered .family .char{animation:jump .7s ease-in-out infinite}
+.family .char{animation:sway 2.4s ease-in-out infinite}
+@keyframes sway{50%{transform:rotate(-2deg)}}
+@keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px) scaleY(1.04)}}
+#electrician.zap .hair,#electrician.zap .arms-up,#electrician.zap .sad,#electrician.zap .brow-sad{display:inline}
+#electrician.zap .arms-down,#electrician.zap .happy,#electrician.zap .brow-happy{display:none}
+#electrician.zap{animation:shake .08s linear 14}
+#electrician.zap .shirt,#electrician.zap .overall{fill:var(--yellow)}
+#electrician.fixing{animation:hop .4s ease-in-out 3}
+@keyframes shake{0%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}100%{transform:translate(-4px,2px)}}
+@keyframes hop{50%{transform:translateY(-14px)}}
+.bubble{opacity:0;transition:opacity .3s}
+.bubble.show{opacity:1}
+#famBubble .say-happy{display:none}
+.powered #famBubble .say-happy{display:inline}
+.powered #famBubble .say-sad{display:none}
+/* barra inferior */
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.teams{display:flex;flex-wrap:wrap;gap:8px}
+.team{background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:4px 6px 4px 14px;display:flex;align-items:center;gap:10px;font-weight:800}
+.team b{font-family:var(--display);background:var(--ink);color:var(--yellow);border-radius:999px;min-width:2.2em;text-align:center;padding:2px 8px;font-variant-numeric:tabular-nums}
+.progress{font-family:var(--display);font-size:1.05rem}
+button.b{appearance:none;font:700 .95rem var(--body);border-radius:999px;padding:9px 16px;cursor:pointer;border:3px solid var(--ink);background:var(--paper);color:var(--ink)}
+button.b:hover{transform:translateY(-1px)}
+button.b.go{background:var(--green);color:#fff}
+button.b.bad{background:var(--red);color:#fff}
+button.b.hl{background:var(--yellow)}
+button.b:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.hint{font-weight:700;margin:0}
+/* cartão da questão */
+.stage{position:fixed;inset:0;background:rgba(34,40,58,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+.q{background:var(--paper);border:4px solid var(--ink);border-radius:22px;max-width:880px;width:100%;max-height:100%;overflow:auto;padding:20px 22px;box-shadow:0 10px 0 var(--ink)}
+.qhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.tag{font-weight:800;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--panel-dark)}
+.q h2{font-family:var(--display);font-size:1.7rem;margin:2px 0 0}
+.timer{font-family:var(--display);font-size:2rem;background:var(--ink);color:var(--yellow);border-radius:999px;min-width:3.2ch;text-align:center;padding:2px 12px;font-variant-numeric:tabular-nums}
+.timer.low{background:var(--red);color:#fff}
+.qtext{font-size:1.12rem;line-height:1.5;margin:10px 0 12px;font-weight:700}
+.alts{display:grid;gap:8px}
+.alt{display:flex;gap:10px;align-items:flex-start;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:9px 12px;line-height:1.4}
+.alt .k{font-family:var(--display);font-size:1.25rem;width:1.8em;height:1.8em;flex:none;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center}
+.alt.correct{background:#dff5e8;border-color:var(--green)}
+.alt.correct .k{background:var(--green)}
+.alt.wrong{opacity:.6}
+.alt .why{display:block;font-size:.88rem;margin-top:3px;color:var(--panel-dark)}
+.box{margin-top:12px;padding:10px 14px;border:3px dashed var(--ink);border-radius:14px;line-height:1.5;background:#fff}
+.box h3{margin:0 0 4px;font-family:var(--display);font-size:1.05rem}
+.award{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px;font-weight:800}
+.award label{display:flex;gap:6px;align-items:center;background:#fff;border:2px solid var(--ink);padding:5px 10px;border-radius:999px;cursor:pointer}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
+.flash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9;pointer-events:none;font-family:var(--display);font-size:clamp(2.4rem,8vw,5.5rem);color:#fff;-webkit-text-stroke:3px var(--ink);text-align:center;animation:pop 1.6s ease forwards}
+@keyframes pop{0%{opacity:0;transform:scale(.6) rotate(-6deg)}20%{opacity:1;transform:scale(1.05) rotate(2deg)}80%{opacity:1}100%{opacity:0;transform:scale(1)}}
+.confetti{position:fixed;top:-20px;width:12px;height:18px;z-index:8;pointer-events:none;animation:fall linear forwards;border-radius:3px}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div><h1>Quadro Elétrico</h1><p>Resolva os 5 circuitos do quadro e devolva a energia para a família.</p></div>
+    <span class="chip">PROTÓTIPO 4</span>
+  </header>
+
+  <div class="scene" id="scene">
+    <svg class="world" viewBox="0 0 1200 510" role="img" aria-label="Casa sem energia ligada à rede, com o quadro de distribuição ampliado ao lado">
+      <!-- chão e nuvens -->
+      <rect x="0" y="470" width="1200" height="40" fill="var(--ground)"/>
+      <g fill="#fff" opacity=".9"><ellipse cx="170" cy="62" rx="46" ry="18"/><ellipse cx="205" cy="50" rx="30" ry="18"/><ellipse cx="600" cy="70" rx="40" ry="15"/></g>
+
+      <g transform="translate(-490,0)">
+      <!-- rede da rua e poste com transformador -->
+      <line class="cable" x1="480" y1="124" x2="636" y2="140"/>
+      <line class="flow live" x1="480" y1="124" x2="636" y2="140"/>
+      <g id="pole">
+        <rect x="593" y="150" width="14" height="322" fill="#9a6a3a" stroke="var(--ink)" stroke-width="4"/>
+        <rect x="560" y="146" width="88" height="12" rx="3" fill="#9a6a3a" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="570" cy="140" r="6" fill="#dfe9f2" stroke="var(--ink)" stroke-width="3"/>
+        <circle cx="636" cy="140" r="6" fill="#dfe9f2" stroke="var(--ink)" stroke-width="3"/>
+        <rect x="612" y="196" width="34" height="46" rx="8" fill="#9aa5b4" stroke="var(--ink)" stroke-width="4"/>
+        <line x1="607" y1="219" x2="612" y2="219" stroke="var(--ink)" stroke-width="4"/>
+      </g>
+      <!-- ramal de entrada: poste → padrão com medidor de kWh → casa -->
+      <path class="cable" d="M636 140 Q 668 230 684 330"/>
+      <path class="flow live" d="M636 140 Q 668 230 684 330"/>
+      <g id="padrao">
+        <rect x="666" y="380" width="38" height="92" fill="#c8754a" stroke="var(--ink)" stroke-width="4"/>
+        <path d="M666 410 H704 M666 440 H704 M685 380 V410 M676 410 V440 M694 440 V472" stroke="#a65c37" stroke-width="2"/>
+        <rect x="662" y="326" width="46" height="56" rx="6" fill="#d7dde5" stroke="var(--ink)" stroke-width="4"/>
+        <rect x="669" y="336" width="32" height="16" rx="2" fill="#1f2a24"/>
+        <text id="kwh" x="685" y="348" text-anchor="middle" font-size="9" fill="#7dffb0" style="font-variant-numeric:tabular-nums">04821</text>
+        <circle class="kled" cx="685" cy="366" r="5" stroke="var(--ink)" stroke-width="2"/>
+      </g>
+      <path class="cable" d="M704 455 H820"/>
+      <path class="flow" id="flowHouse" d="M704 455 H820"/>
+
+      </g>
+      <g transform="translate(690,0)">
+      <!-- quadro de distribuição (vista ampliada) -->
+      <rect x="40" y="40" width="430" height="440" rx="22" fill="var(--panel)" stroke="var(--ink)" stroke-width="5"/>
+      <rect x="62" y="62" width="386" height="396" rx="14" fill="var(--panel-dark)"/>
+      <text x="255" y="90" text-anchor="middle" fill="#fff" font-size="19">QUADRO DE DISTRIBUIÇÃO</text>
+      <!-- multimedidor -->
+      <rect x="150" y="104" width="210" height="62" rx="8" fill="#d7dde5" stroke="var(--ink)" stroke-width="4"/>
+      <rect x="162" y="114" width="186" height="42" rx="4" fill="#12201a"/>
+      <text id="lcd" class="lcd" x="255" y="142" text-anchor="middle" font-size="17">FALHA</text>
+      <!-- trilho DIN e disjuntores -->
+      <rect x="72" y="246" width="366" height="12" fill="#9aa5b4" stroke="var(--ink)" stroke-width="2"/>
+      <g id="meters"></g>
+
+      <!-- chave geral (liga sozinha quando os 5 medidores são consertados) -->
+      <g id="mainSwitch" aria-label="Chave geral">
+        <rect x="200" y="392" width="110" height="56" rx="10" fill="var(--ink)"/>
+        <rect x="248" y="398" width="14" height="44" rx="5" fill="#2e3448"/>
+        <g class="handle"><rect x="232" y="418" width="46" height="20" rx="8" fill="var(--red)" stroke="#fff" stroke-width="2"/></g>
+        <text x="324" y="414" fill="#fff" font-size="13">DISJUNTOR</text><text x="324" y="430" fill="#fff" font-size="13">GERAL</text>
+      </g>
+
+      </g>
+      <g transform="translate(-400,0)">
+      <!-- casa -->
+      <g id="house">
+        <rect class="glow" x="700" y="230" width="290" height="250" rx="30" fill="var(--yellow)" filter="blur(18px)"/>
+        <polygon points="715,268 835,180 955,268" fill="var(--red)" stroke="var(--ink)" stroke-width="5" stroke-linejoin="round"/>
+        <rect x="730" y="265" width="210" height="205" fill="#f6e3c2" stroke="var(--ink)" stroke-width="5"/>
+        <rect class="win" x="752" y="292" width="58" height="50" rx="6" stroke="var(--ink)" stroke-width="4"/>
+        <rect class="win" x="860" y="292" width="58" height="50" rx="6" stroke="var(--ink)" stroke-width="4"/>
+        <rect x="812" y="372" width="48" height="98" rx="6" fill="var(--blue)" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="850" cy="424" r="4" fill="var(--yellow)"/>
+        <path d="M754 410 V455 H735" stroke="var(--ink)" stroke-width="4" fill="none"/><rect x="740" y="372" width="30" height="38" rx="3" fill="#d7dde5" stroke="var(--ink)" stroke-width="3"/><rect x="745" y="381" width="20" height="5" fill="var(--ink)"/><rect x="745" y="393" width="20" height="5" fill="var(--ink)"/>
+      </g>
+      </g>
+      <!-- linhas de "zoom": o quadro grande é a vista ampliada do quadro dentro da casa -->
+      <g class="zoom" stroke="#fff" stroke-width="2.5" stroke-dasharray="7 7" fill="none" opacity=".8">
+        <line x1="370" y1="372" x2="732" y2="42"/>
+      </g>
+      <g id="elecWrap"></g>
+      <g class="family" id="family"></g>
+
+      <!-- balões -->
+      <g class="bubble" id="bubble"><rect x="196" y="268" width="150" height="44" rx="14" fill="#fff" stroke="var(--ink)" stroke-width="3"/><text id="bubbleText" x="271" y="296" text-anchor="middle" font-size="16">Ai!</text></g>
+      <g id="famBubble">
+        <rect x="556" y="258" width="138" height="44" rx="14" fill="#fff" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M570 300 L 526 360 L 588 300" fill="#fff" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="564" y="294" width="24" height="8" fill="#fff"/>
+        <text class="say-sad" x="625" y="286" text-anchor="middle" font-size="17">Cadê a luz?!</text>
+        <text class="say-happy" x="625" y="286" text-anchor="middle" font-size="17">Eba! Voltou!</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="bar">
+    <div class="teams" id="teams"></div>
+    <div class="progress" id="progress"></div>
+    <button class="b" id="reset">Reiniciar</button>
+  </div>
+  <p class="hint" id="hint">Clique num disjuntor com defeito para abrir a questão.</p>
+</div>
+
+<div class="stage" id="stage" hidden>
+  <div class="q" role="dialog" aria-modal="true" aria-labelledby="qtitle">
+    <div class="qhead"><div><div class="tag" id="qtag"></div><h2 id="qtitle"></h2></div><div class="timer" id="timer">45</div></div>
+    <p class="qtext" id="qtext"></p>
+    <div id="qfig"></div>
+    <div class="alts" id="alts"></div>
+    <div id="glossBox"></div>
+    <div id="after"></div>
+    <div class="actions" id="actions"></div>
+  </div>
+</div>
+<div id="fx"></div>
+
+<script>
+const TEAMS=["Equipe 1","Equipe 2","Equipe 3","Equipe 4"];
+const graf=`<svg class="graf" viewBox="0 0 320 170" style="max-width:340px;width:100%;margin:0 0 10px">
+<line x1="40" y1="140" x2="300" y2="140" stroke="#22283a" stroke-width="2"/><line x1="40" y1="140" x2="40" y2="10" stroke="#22283a" stroke-width="2"/>
+<polyline fill="none" stroke="#4a7bd8" stroke-width="3" points="40,140 300,36"/>
+<polyline fill="none" stroke="#f0595b" stroke-width="3" stroke-dasharray="7 5" points="${Array.from({length:21},(_,k)=>{const i=k*0.1;const V=4*i+4*i*i;return (40+i*130).toFixed(1)+','+(140-V*5.2).toFixed(1)}).join(' ')}"/>
+<text x="250" y="160">i (A)</text><text x="4" y="16">V (V)</text>
+<text x="40" y="156">0</text><text x="166" y="156">1</text><text x="294" y="156">2</text><text x="20" y="88">10</text><text x="20" y="36">20</text>
+<text x="282" y="62" style="fill:#4a7bd8;font-weight:800">A</text><text x="290" y="20" style="fill:#f0595b;font-weight:800">B</text></svg>`;
+const Q=[
+ {n:1,room:1,circ:"Tomadas · sala",lvl:"Compreensão conceitual",t:45,
+  text:"Um cabo de cobre de 2,5 mm² é trocado por outro de cobre, de mesmo comprimento, com 6 mm². O que acontece com a resistividade (ρ), a condutividade (σ) e a resistência (R)?",
+  alts:[["ρ e R diminuem; σ aumenta","Confunde propriedade do material (ρ) com a do objeto (R)."],["ρ e σ não mudam; R cai para ≈ 42%",""],["ρ e σ não mudam; R aumenta ≈ 2,4 vezes","Inverteu a relação: R é inversamente proporcional à área."],["ρ não muda; σ e R diminuem","σ = 1/ρ: se ρ não muda, σ também não."]],ok:1,
+  sol:"ρ e σ dependem só do material (continua cobre). R = ρL/A ⇒ R₂/R₁ = 2,5/6 ≈ 0,42.",gl:"Resistência · Resistividade · Condutividade — R = ρL/A ; σ = 1/ρ"},
+ {n:2,room:2,circ:"Iluminação · quarto",lvl:"Interpretação de gráfico",t:60,fig:graf,
+  text:"O gráfico mostra V × i de dois componentes. Assinale a correta.",
+  alts:[["Ambos são ôhmicos, pois V aumenta com i","Ôhmico exige V/i constante (reta pela origem), não só crescer."],["A resistência de B diminui com a corrente","Em B, V/i vai de 8 Ω (1 A) para 12 Ω (2 A): aumenta."],["A é ôhmico (10 Ω); em B, R aumenta com i, como num filamento aquecido por efeito Joule",""],["Em i = 1 A, A e B têm a mesma resistência","Em 1 A: A = 10 Ω, B = 8 Ω. As curvas só se cruzam em 1,5 A."]],ok:2,
+  sol:"A: V/i = 10 Ω sempre ⇒ ôhmico. B: 8 Ω em 1 A e 12 Ω em 2 A; o aquecimento (efeito Joule) aumenta a resistividade do metal.",gl:"Resistor · Resistência · DDP · Efeito Joule — V = R·i ; ρ = ρ₀[1 + α(T − T₀)]"},
+ {n:3,room:3,circ:"Chuveiro · banheiro",lvl:"Cálculo",t:60,
+  text:"Um chuveiro de 5500 W / 220 V fica ligado por 10 min. Quantos elétrons atravessam a seção do fio? (e = 1,6 × 10⁻¹⁹ C)",
+  alts:[["9,4 × 10²²",""],["1,6 × 10²⁰","Esse é o número de elétrons por segundo."],["2,4 × 10⁻¹⁵","Multiplicou q por e em vez de dividir."],["1,6 × 10²¹","Usou Δt = 10 s, sem converter minutos."]],ok:0,
+  sol:"i = P/V = 25 A → q = i·Δt = 25 × 600 = 15 000 C → n = q/e ≈ 9,4 × 10²² elétrons.",gl:"Corrente · Carga elétrica · Carga elementar — i = Δq/Δt ; q = n·e"},
+ {n:4,room:4,circ:"Tomadas · cozinha (DR 30 mA)",lvl:"Estudo de caso",t:45,
+  text:"O alicate amperímetro mede 10,00 A na fase e 9,96 A no neutro de um circuito com DR de 30 mA. O DR:",
+  alts:[["Não desarma: 9,96 A ≈ 10 A","A diferença de 40 mA é maior que 30 mA."],["Desarma porque 10 A > 30 mA","Confunde corrente de operação com corrente residual."],["Não desarma: a diferença vira calor","O efeito Joule dissipa energia, não carga."],["Desarma: 40 mA saem por outro caminho (fuga à terra)",""]],ok:3,
+  sol:"Lei dos nós: sem fuga, tudo que entra pela fase volta pelo neutro. 10,00 − 9,96 = 40 mA > 30 mA ⇒ DR desarma.",gl:"Conservação da carga (lei dos nós) — Σi(entram) = Σi(saem)"},
+ {n:5,room:0,circ:"Disjuntor geral",lvl:"Análise de afirmativas",t:90,
+  text:"Cabo de cobre de 6 mm² com 25 A (n = 8,49 × 10²⁸ m⁻³). I) J ≈ 4,2 × 10⁶ A/m². II) v_d ≈ 0,3 mm/s, por isso o chuveiro demora a começar a aquecer. III) Trocando por alumínio de mesma seção, a perda por efeito Joule nos fios aumenta ≈ 60%.",
+  alts:[["Apenas I","III também está correta (ρAl/ρCu ≈ 1,63)."],["Apenas II","II tem o valor certo e a conclusão errada."],["Apenas I e III",""],["I, II e III","Quem se propaga rápido é o campo elétrico, não os elétrons."]],ok:2,
+  sol:"I: J = i/A = 25/6×10⁻⁶ ≈ 4,2×10⁶ A/m² ✔. II: v_d está certo, mas o campo elétrico se propaga quase instantaneamente ✘. III: P = i²R e R ∝ ρ ⇒ 2,75/1,69 ≈ 1,63 ✔.",gl:"Densidade de corrente · Condutor · Condutividade · Efeito Joule — J = i/A = n·e·v_d"}
+];
+// medidores: posição, nome e leitura exibida quando consertado
+const M=[
+  {n:1,name:"TOMADAS",read:"R ↓ 42%"},
+  {n:2,name:"ILUMINAÇÃO",read:"A = 10 Ω"},
+  {n:3,name:"CHUVEIRO",read:"9,4×10²² e⁻"},
+  {n:4,name:"DR 30 mA",read:"Δi = 40 mA"},
+  {n:5,name:"ALIMENTADOR",read:"J = 4,2 MA/m²"},
+];
+const $=id=>document.getElementById(id);
+let st, cur=null, tick=null, left=0;
+function fresh(){return {score:[0,0,0,0],fixed:{},powered:false,last:"",kwh:4821}}
+let kwhTick=null;
+
+function meterSVG(m){
+  const fixed=st.fixed[m.n], x=62+38.5+77*(m.n-1), y=196;
+  return `<g class="brk ${fixed?"fixed":"broken"}" data-n="${m.n}" role="button" tabindex="0" aria-label="Circuito ${m.n}: ${m.name} ${fixed?"consertado":"com defeito, abrir questão"}" transform="translate(${x},${y})">
+    <circle class="smoke" cx="-6" cy="-8" r="8" fill="#c9ced6"/><circle class="smoke" cx="8" cy="-10" r="7" fill="#c9ced6"/>
+    <rect class="bbody" x="-25" y="0" width="50" height="112" rx="6"/>
+    <rect x="-16" y="6" width="32" height="10" rx="2" fill="#b9c1cc" stroke="var(--ink)" stroke-width="2"/>
+    <rect x="-16" y="96" width="32" height="10" rx="2" fill="#b9c1cc" stroke="var(--ink)" stroke-width="2"/>
+    <rect x="-10" y="30" width="20" height="44" rx="4" fill="var(--ink)"/>
+    <rect class="lev" x="-8" y="33" width="16" height="20" rx="3"/>
+    <circle class="bled" cx="0" cy="84" r="5" stroke="var(--ink)" stroke-width="2"/>
+    ${m.n===4?`<rect x="10" y="78" width="11" height="11" rx="2" fill="var(--yellow)" stroke="var(--ink)" stroke-width="1.5"/><text x="15.5" y="87" text-anchor="middle" font-size="8" fill="var(--ink)">T</text>`:""}
+    <polyline class="spark" points="18,2 30,-8 26,4 40,-4" stroke="var(--yellow)" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+    <polyline class="spark" points="-18,108 -30,118 -26,104 -40,112" stroke="var(--yellow)" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+    <circle class="tagc" cx="0" cy="-22" r="11" stroke="var(--ink)" stroke-width="2.5"/><text x="0" y="-17" text-anchor="middle" font-size="13" fill="var(--ink)">${m.n}</text>
+    <text x="0" y="134" text-anchor="middle" font-size="11" fill="#fff">${m.name}</text>
+  </g>`;
+}
+function openQ(n){
+  cur=Q.find(q=>q.n===n); const m=M[n-1];
+  $("qtag").textContent=`Questão ${n} · ${cur.lvl}`; $("qtitle").textContent=`Circuito com defeito: ${m.name.toLowerCase()}`;
+  $("qtext").textContent=cur.text; $("qfig").innerHTML=cur.fig||"";
+  $("alts").innerHTML=cur.alts.map((a,i)=>`<div class="alt" id="alt${i}"><span class="k">${"ABCD"[i]}</span><span>${a[0]}<span class="why" hidden>${a[1]}</span></span></div>`).join("");
+  $("glossBox").innerHTML=""; $("after").innerHTML="";
+  $("actions").innerHTML=`<button class="b" id="bGl">Consultar glossário</button><button class="b hl" id="bRev">Revelar resposta</button><button class="b" id="bClose">Fechar</button>`;
+  $("bGl").onclick=()=>{$("glossBox").innerHTML=`<div class="box"><h3>Glossário · Etapa 1</h3>${cur.gl}</div>`};
+  $("bRev").onclick=reveal; $("bClose").onclick=closeQ;
+  $("stage").hidden=false; startTimer(cur.t);
+}
+function startTimer(s){clearInterval(tick);left=s;const t=$("timer");t.textContent=left;t.classList.remove("low");
+  tick=setInterval(()=>{left--;t.textContent=Math.max(left,0);if(left<=10)t.classList.add("low");if(left<=0)clearInterval(tick)},1000)}
+function reveal(){
+  clearInterval(tick);
+  cur.alts.forEach((a,i)=>{const el=$("alt"+i);el.classList.add(i===cur.ok?"correct":"wrong");el.querySelector(".why").hidden=false});
+  $("after").innerHTML=`<div class="box"><h3>Resolução · resposta ${"ABCD"[cur.ok]}</h3>${cur.sol}</div>
+    <div class="award">Quem acertou?${TEAMS.map((t,i)=>`<label><input type="checkbox" id="aw${i}"> ${t}</label>`).join("")}</div>`;
+  $("actions").innerHTML=`<button class="b go" id="bOk">Maioria acertou: consertar!</button><button class="b bad" id="bZap">Maioria errou: levar choque</button>`;
+  $("bOk").onclick=()=>finish(true); $("bZap").onclick=()=>finish(false);
+}
+function say(t,ms){$("bubbleText").textContent=t;$("bubble").classList.add("show");setTimeout(()=>$("bubble").classList.remove("show"),ms)}
+function flash(t){const d=document.createElement("div");d.className="flash";d.textContent=t;$("fx").appendChild(d);setTimeout(()=>d.remove(),1700)}
+// ---------- personagens (feitos em SVG) ----------
+function person(o){
+  const s=o.s, w=27*s, h=40*s, leg=16*s, cy=470-leg-h, lx=w*0.38, K="var(--ink)";
+  const ex=w*0.34, ey=cy-h*0.36, er=7.5*s;
+  const arm=(side,up)=>{const sx=side*w*0.9, sy=up?cy-h*0.25:cy-h*0.02;
+    const ex2=up?sx+side*14*s:sx+side*7*s, ey2=up?sy-38*s:sy+32*s;
+    return `<path d="M${sx} ${sy} Q ${sx+side*(up?18:12)*s} ${up?sy-10*s:sy+14*s} ${ex2} ${ey2}" stroke="${K}" stroke-width="${4.5*s}" fill="none" stroke-linecap="round"/><circle cx="${ex2}" cy="${ey2}" r="${5.5*s}" fill="${o.color}" stroke="${K}" stroke-width="${3*s}"/>`};
+  const eye=x=>`<circle cx="${x}" cy="${ey}" r="${er}" fill="#fff" stroke="${K}" stroke-width="${2*s}"/><circle cx="${x+0.8*s}" cy="${ey+1.2*s}" r="${3.6*s}" fill="${K}"/><circle cx="${x-0.6*s}" cy="${ey-0.6*s}" r="${1.3*s}" fill="#fff"/>`;
+  const by=ey-er-4*s;
+  return `<g transform="translate(${o.x},0)"><g class="char ${o.cls||""}" ${o.id?`id="${o.id}"`:""} style="animation-delay:${o.delay||0}s">
+    ${o.back?o.back(w,h,cy,s):""}
+    <line x1="${-lx}" y1="${cy+h*0.8}" x2="${-lx}" y2="465" stroke="${K}" stroke-width="${5*s}" stroke-linecap="round"/>
+    <line x1="${lx}" y1="${cy+h*0.8}" x2="${lx}" y2="465" stroke="${K}" stroke-width="${5*s}" stroke-linecap="round"/>
+    <ellipse cx="${-lx-3*s}" cy="467" rx="${9*s}" ry="${4.5*s}" fill="${o.shoe||K}"/><ellipse cx="${lx+3*s}" cy="467" rx="${9*s}" ry="${4.5*s}" fill="${o.shoe||K}"/>
+    <g class="arms-down">${arm(-1,false)}${arm(1,false)}</g><g class="arms-up">${arm(-1,true)}${arm(1,true)}</g>
+    <ellipse class="${o.bodyCls||""}" cx="0" cy="${cy}" rx="${w}" ry="${h}" fill="${o.color}" stroke="${K}" stroke-width="${4*s}"/>
+    ${o.front?o.front(w,h,cy,s):""}
+    ${eye(-ex)}${eye(ex)}
+    <g class="brow-sad" stroke="${K}" stroke-width="${3*s}" stroke-linecap="round"><line x1="${-ex-6*s}" y1="${by+2*s}" x2="${-ex+6*s}" y2="${by-3*s}"/><line x1="${ex+6*s}" y1="${by+2*s}" x2="${ex-6*s}" y2="${by-3*s}"/></g>
+    <g class="brow-happy" stroke="${K}" stroke-width="${3*s}" stroke-linecap="round" fill="none"><path d="M${-ex-6*s} ${by} Q ${-ex} ${by-6*s} ${-ex+6*s} ${by}"/><path d="M${ex-6*s} ${by} Q ${ex} ${by-6*s} ${ex+6*s} ${by}"/></g>
+    <circle cx="${-w*0.6}" cy="${cy-h*0.06}" r="${4.5*s}" fill="#ff8fa3" opacity=".7"/><circle cx="${w*0.6}" cy="${cy-h*0.06}" r="${4.5*s}" fill="#ff8fa3" opacity=".7"/>
+    <path class="sad" d="M${-7*s} ${cy+h*0.14} Q 0 ${cy+h*0.14-7*s} ${7*s} ${cy+h*0.14}" stroke="${K}" stroke-width="${3*s}" fill="none" stroke-linecap="round"/>
+    <path class="happy" d="M${-10*s} ${cy+h*0.03} Q 0 ${cy+h*0.03+18*s} ${10*s} ${cy+h*0.03} Z" fill="#8a2b3b" stroke="${K}" stroke-width="${2.5*s}" stroke-linejoin="round"/>
+    ${o.top?o.top(w,h,cy,s):""}
+  </g></g>`;
+}
+const K="var(--ink)";
+const CHARS={
+  elec:{x:264,s:1.05,color:"#2f62c4",id:"electrician",cls:"cheerful",bodyCls:"overall",shoe:"#5a3b1e",
+    front:(w,h,cy,s)=>`<path class="shirt" d="M${-w*0.985} ${cy-h*0.12} A ${w} ${h} 0 0 1 ${w*0.985} ${cy-h*0.12} Z" fill="var(--orange)" stroke="${K}" stroke-width="${3*s}"/>
+      <line x1="${-w*0.42}" y1="${cy-h*0.12}" x2="${-w*0.55}" y2="${cy-h*0.5}" stroke="#2f62c4" stroke-width="${5*s}"/><line x1="${w*0.42}" y1="${cy-h*0.12}" x2="${w*0.55}" y2="${cy-h*0.5}" stroke="#2f62c4" stroke-width="${5*s}"/>
+      <rect x="${-w*0.92}" y="${cy+h*0.32}" width="${w*1.84}" height="${7*s}" fill="#5a3b1e"/><rect x="${w*0.2}" y="${cy+h*0.3}" width="${11*s}" height="${14*s}" rx="2" fill="#7a5530" stroke="${K}" stroke-width="2"/>
+      <rect x="${-w*0.22}" y="${cy+h*0.05}" width="${w*0.44}" height="${11*s}" rx="2" fill="#244f9e" stroke="${K}" stroke-width="2"/>`,
+    top:(w,h,cy,s)=>`<g class="hair" stroke="${K}" stroke-width="3"><line x1="${-w*0.6}" y1="${cy-h*1.05}" x2="${-w*0.9}" y2="${cy-h*1.6}"/><line x1="0" y1="${cy-h*1.2}" x2="0" y2="${cy-h*1.8}"/><line x1="${w*0.6}" y1="${cy-h*1.05}" x2="${w*0.9}" y2="${cy-h*1.6}"/></g>
+      <path d="M${-w*0.9} ${cy-h*0.66} Q 0 ${cy-h*1.55} ${w*0.9} ${cy-h*0.66} Z" fill="var(--yellow)" stroke="${K}" stroke-width="${3.5*s}"/>
+      <rect x="${-w*1.1}" y="${cy-h*0.7}" width="${w*2.2}" height="${6*s}" rx="3" fill="var(--yellow)" stroke="${K}" stroke-width="${3*s}"/>
+      <circle cx="0" cy="${cy-h*0.98}" r="${4.5*s}" fill="#fff" stroke="${K}" stroke-width="2"/>
+      <g transform="translate(${w*0.9+7*s},${cy+30*s})"><rect x="-3" y="-6" width="7" height="13" rx="2" fill="var(--red)" stroke="${K}" stroke-width="1.5"/><line x1="0.5" y1="7" x2="0.5" y2="20" stroke="#9aa5b4" stroke-width="3"/></g>`},
+  pai:{x:420,s:1,color:"var(--blue)",delay:0,
+    front:(w,h,cy,s)=>`<rect x="${w*0.15}" y="${cy+h*0.45}" width="${10*s}" height="${9*s}" rx="2" fill="#3a63b8" stroke="${K}" stroke-width="2"/>`,
+    top:(w,h,cy,s)=>`<path d="M${-13*s} ${cy-2*s} Q ${-7*s} ${cy-h*0.12-3*s} 0 ${cy-h*0.02-3*s} Q ${7*s} ${cy-h*0.12-3*s} ${13*s} ${cy-2*s}" fill="${K}" stroke="${K}" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M${-w*0.5} ${cy-h*0.9} Q ${-w*0.1} ${cy-h*1.25} ${w*0.15} ${cy-h*0.97} Q ${w*0.3} ${cy-h*1.2} ${w*0.55} ${cy-h*0.88}" fill="none" stroke="${K}" stroke-width="5" stroke-linecap="round"/>
+      <g fill="none" stroke="${K}" stroke-width="2.5"><circle cx="${-w*0.34}" cy="${cy-h*0.36}" r="${10*s}"/><circle cx="${w*0.34}" cy="${cy-h*0.36}" r="${10*s}"/><line x1="${-w*0.34+10*s}" y1="${cy-h*0.36}" x2="${w*0.34-10*s}" y2="${cy-h*0.36}"/></g>`},
+  mae:{x:510,s:1,color:"#c56cf0",delay:.15,
+    back:(w,h,cy,s)=>`<circle cx="0" cy="${cy-h*1.08}" r="${11*s}" fill="#6b3a1f" stroke="${K}" stroke-width="3"/>`,
+    front:(w,h,cy,s)=>`<circle cx="${-w*0.98}" cy="${cy-h*0.1}" r="${3.5*s}" fill="var(--yellow)" stroke="${K}" stroke-width="1.5"/><circle cx="${w*0.98}" cy="${cy-h*0.1}" r="${3.5*s}" fill="var(--yellow)" stroke="${K}" stroke-width="1.5"/>
+      <circle cx="0" cy="${cy+h*0.45}" r="3" fill="#fff"/><circle cx="0" cy="${cy+h*0.62}" r="3" fill="#fff"/>`,
+    top:(w,h,cy,s)=>`<path d="M${-w*0.98} ${cy-h*0.35} Q ${-w*0.9} ${cy-h*1.12} 0 ${cy-h*1.0} Q ${w*0.9} ${cy-h*1.12} ${w*0.98} ${cy-h*0.35} Q ${w*0.55} ${cy-h*0.78} 0 ${cy-h*0.72} Q ${-w*0.55} ${cy-h*0.78} ${-w*0.98} ${cy-h*0.35} Z" fill="#6b3a1f" stroke="${K}" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M${w*0.35} ${cy-h*0.95} l ${8*s} ${-8*s} l ${2*s} ${12*s} Z M${w*0.35} ${cy-h*0.95} l ${-10*s} ${-6*s} l ${2*s} ${12*s} Z" fill="#ff6fa0" stroke="${K}" stroke-width="2"/>`},
+  filho:{x:590,s:.72,color:"var(--green)",delay:.3,shoe:"var(--red)",
+    front:(w,h,cy,s)=>`<g fill="#a0522d" opacity=".7"><circle cx="${-w*0.55}" cy="${cy-h*0.2}" r="1.6"/><circle cx="${-w*0.45}" cy="${cy-h*0.12}" r="1.6"/><circle cx="${w*0.5}" cy="${cy-h*0.18}" r="1.6"/><circle cx="${w*0.42}" cy="${cy-h*0.1}" r="1.6"/></g>`,
+    top:(w,h,cy,s)=>`<path d="M${-w*0.92} ${cy-h*0.6} Q 0 ${cy-h*1.45} ${w*0.92} ${cy-h*0.6} Z" fill="var(--red)" stroke="${K}" stroke-width="3"/><rect x="${-w*0.2}" y="${cy-h*0.66}" width="${w*1.45}" height="${5*s}" rx="2" fill="var(--red)" stroke="${K}" stroke-width="2.5"/>`},
+};
+function render(){
+  $("meters").innerHTML=M.map(meterSVG).join("");
+  $("elecWrap").innerHTML=person(CHARS.elec);
+  $("family").innerHTML=[CHARS.pai,CHARS.mae,CHARS.filho].map(person).join("");
+  $("teams").innerHTML=TEAMS.map((t,i)=>`<div class="team">${t}<b>${st.score[i]}</b></div>`).join("");
+  const done=Object.keys(st.fixed).length;
+  const lcd=$("lcd"); if(st.powered){lcd.textContent="220 V · OK";lcd.classList.remove("err")} else if(st.last){lcd.textContent=st.last;lcd.classList.remove("err")} else {lcd.textContent="FALHA";lcd.classList.add("err")}
+  $("progress").textContent=`Circuitos consertados: ${done}/5`;
+  $("hint").textContent=st.powered?"Casa energizada! Fim de jogo.":done===4?"Falta 1 circuito: quando ele for consertado, o disjuntor geral arma sozinho.":"Clique num disjuntor com defeito para abrir a questão.";
+  document.querySelectorAll(".brk.broken").forEach(g=>{
+    const open=()=>openQ(+g.dataset.n); g.onclick=open; g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}};
+  });
+}
+function finish(ok){
+  TEAMS.forEach((_,i)=>{if($("aw"+i).checked)st.score[i]+=1});
+  const n=cur.n; closeQ();
+  const fix=()=>{st.fixed[n]=true; st.last=M[n-1].read; render(); if(Object.keys(st.fixed).length===5) setTimeout(powerOn,1100)};
+  if(ok){ fix(); const el=$("electrician"); el.classList.add("fixing"); say("Consertado!",1300); flash("Consertado!"); setTimeout(()=>el.classList.remove("fixing"),1300); }
+  else { $("electrician").classList.add("zap"); say("Bzzzt! Errou!",1500); flash("ZZZAP!");
+    setTimeout(()=>{fix(); say("Agora aprendi.",1400);},1500); }
+}
+function powerOn(){
+  if(st.powered) return; st.powered=true;
+  const sc=$("scene"), sw=$("mainSwitch");
+  sw.classList.add("ready"); say("Armando o disjuntor geral...",1600);
+  const T=[[900,()=>{sw.classList.remove("ready");sw.classList.add("on");sc.classList.add("s1")}],
+           [1700,()=>sc.classList.add("s2")],
+           [2500,()=>sc.classList.add("s3")],
+           [3000,()=>{sc.classList.add("powered");render();kwhTick=setInterval(()=>{st.kwh+=1;$("kwh").textContent=String(st.kwh).padStart(5,"0")},700);flash("Casa energizada!");say("Missão cumprida!",2600);confetti()}]];
+  T.forEach(([t,f])=>timers.push(setTimeout(f,t)));
+}
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cols=["#ffd23f","#f0595b","#3fbf7f","#4a7bd8","#c56cf0","#ff9f43"];
+  for(let k=0;k<90;k++){const c=document.createElement("div");c.className="confetti";c.style.left=Math.random()*100+"vw";c.style.background=cols[k%cols.length];c.style.animationDuration=(2.2+Math.random()*2)+"s";c.style.animationDelay=(Math.random()*.8)+"s";$("fx").appendChild(c);setTimeout(()=>c.remove(),5200)}
+}
+let timers=[];
+function closeQ(){clearInterval(tick);$("stage").hidden=true}
+$("reset").onclick=()=>{timers.forEach(clearTimeout);clearInterval(kwhTick);$("kwh").textContent="04821";timers=[];st=fresh();["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));$("mainSwitch").className.baseVal="";render()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("stage").hidden)closeQ()});
+st=fresh(); render();
+</script>
+
+</body>
+</html>
