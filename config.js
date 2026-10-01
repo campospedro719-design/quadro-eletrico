@@ -10,4 +10,4 @@
    tudo roda numa só tela, sem celulares e sem placar ao vivo.
    ============================================================ */
 
-window.CONFIG_DB = "";
+window.CONFIG_DB = "https://quadro-eletrico-85799-default-rtdb.firebaseio.com";
