@@ -643,9 +643,11 @@ async function iniciarPartida(){
         await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0,q:1,terminou:false});
     },"O início da partida");
   }
+  /* numero da partida: o celular zera as proprias respostas quando ve um novo */
+  const partida=Date.now();
   for(let k=5;k>=1;k--){
     mostraContagem(k);
-    if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"contagem",contagem:k}),"A contagem");
+    if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"contagem",contagem:k,partida}),"A contagem");
     await espera(1000);
   }
   escondeContagem();

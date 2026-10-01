@@ -126,6 +126,7 @@ let respondi = {};      // { nQuestao: alternativa }
 let vistaEm = {};       // { nQuestao: quando esta questão apareceu aqui }
 let minhaQ = 1;         // cada pessoa anda no próprio ritmo
 let terminei = false;
+let minhaPartida = 0;   // partida a que respondi/minhaQ/terminei se referem
 let relogio = null;
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
@@ -134,7 +135,7 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
 /* ---------- memória local (sobrevive a recarregar a página) ---------- */
 const chave = () => `quadro:sala:${sala}`;
 function salvar() {
-  try { localStorage.setItem(chave(), JSON.stringify({ nome: eu.nome, respondi, minhaQ, terminei })); } catch (e) {}
+  try { localStorage.setItem(chave(), JSON.stringify({ nome: eu.nome, respondi, minhaQ, terminei, partida: minhaPartida })); } catch (e) {}
 }
 function carregar() {
   try {
@@ -144,6 +145,7 @@ function carregar() {
       respondi = v.respondi || {};
       minhaQ = v.minhaQ || 1;
       terminei = !!v.terminei;
+      minhaPartida = v.partida || 0;
     }
   } catch (e) {}
 }
@@ -254,6 +256,13 @@ function desenha() {
     return;
   }
   const st = dados.info.estado || "lobby";
+  /* Reiniciar na sala comeca uma partida nova: o que este celular respondeu
+     na anterior nao vale mais */
+  const partida = dados.info.partida || 0;
+  if (partida && partida !== minhaPartida) {
+    minhaPartida = partida; respondi = {}; vistaEm = {}; minhaQ = 1; terminei = false;
+    salvar();
+  }
   const marca = [st, dados.info.contagem || 0, minhaQ,
                  respondi[minhaQ] === undefined ? 0 : 1, terminei ? 1 : 0].join(":");
   if (marca === etapa) return;               // nada mudou: não redesenha sob o dedo
