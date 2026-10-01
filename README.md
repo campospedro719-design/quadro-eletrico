@@ -2,7 +2,7 @@
 
 Jogo de perguntas da **Etapa 3** da Atividade de Física II – Corrente Elétrica (Univille, Profª Jane M. R. Voigt).
 
-Cada acerto rearma um circuito do quadro de distribuição. Com os 5 circuitos resolvidos, o disjuntor geral arma sozinho e a casa da família volta a ter energia.
+A sala inteira joga junta contra uma **meta coletiva**: se a turma, somada, acertar pelo menos **45%** das respostas, o disjuntor geral arma e a casa da família volta a ter energia. Abaixo disso, o geral desarma e a casa fica no escuro.
 
 A turma joga pelo celular: a cena fica na tela da sala, cada pessoa entra lendo um QR code, escreve o nome e responde no próprio aparelho. O placar atualiza ao vivo.
 
@@ -18,12 +18,23 @@ A turma joga pelo celular: a cena fica na tela da sala, cada pessoa entra lendo 
 5. As 5 questões vão para os celulares. **Cada pessoa responde no próprio ritmo**: escolhe a alternativa, toca em **Próxima questão →** e segue.
 6. Cada questão tem **1 minuto**, contado a partir do momento em que aparece naquele celular. Se o minuto acabar sem resposta, pula sozinho para a próxima.
 7. Durante a prova, **ninguém descobre se acertou**. A tela da sala mostra só o progresso (`Pedro 3/5 · Ana 2/5`), e os disjuntores vão sendo rearmados conforme a turma avança.
-8. Quando todo mundo termina, a casa energiza e o **relatório da turma** aparece na tela: uma tabela com a marcação de cada equipe em cada questão, o gabarito, a pontuação, e depois o enunciado e a resolução de cada uma.
-9. **Reiniciar** zera tudo, mantendo quem já entrou. **Ver relatório** reabre a tabela.
+8. Quando todo mundo termina, o jogo soma os acertos da sala inteira e tenta armar o disjuntor geral:
+   - **turma ≥ 45%** → a casa energiza;
+   - **turma < 45%** → o geral desarma, os circuitos caem de novo e a casa continua no escuro.
+9. Em seguida aparece o **relatório da turma**: o medidor com o % de acerto contra a meta, uma tabela com a marcação de cada pessoa em cada questão, o gabarito, a pontuação, uma linha com o % de acerto da turma em cada questão, e depois o enunciado e a resolução de cada uma. Os celulares mostram se a luz voltou e o resultado de cada um.
+10. **Reiniciar** zera tudo, mantendo quem já entrou. **Ver relatório** reabre a tabela.
 
 > Se alguém largar o celular no meio e travar a turma, **Encerrar agora** fecha a prova e mostra o resultado com o que já foi respondido.
 
-### Pontuação
+### Meta da turma
+
+A conta é **acertos da sala inteira ÷ (pessoas × 5 questões)**. Quem deixa o minuto acabar sem responder conta como erro. Exemplo: 20 pessoas → 100 respostas → precisa de pelo menos 45 certas.
+
+A meta fica no `config.js` (`window.META_TURMA = 0.45`). Para mudar para 50%, por exemplo, troque para `0.5`.
+
+A linha **acerto da turma** do relatório mostra o % de cada questão: em verde as que ficaram acima da meta, em vermelho as que ficaram abaixo. Serve para ver qual conceito precisa ser retomado.
+
+### Pontuação individual (ranking)
 
 Cada acerto vale **10 pontos + até 5 de bônus por rapidez** (quanto mais rápido dentro do minuto, maior o bônus). A conta só é feita no fim — durante a prova o placar não existe para ninguém.
 
@@ -71,7 +82,7 @@ Abra **`classico.html`**. É a versão original, que roda offline: a turma se di
 | `index.html` | Tela da sala (projetor): a cena, o QR code, o placar e o controle das questões |
 | `jogar.html` | Tela do celular: entra com o nome e responde |
 | `classico.html` | Versão offline, com equipes marcadas na mão (plano B) |
-| `config.js` | O único arquivo a editar: o endereço do banco de dados |
+| `config.js` | O único arquivo a editar: o endereço do banco de dados e a meta da turma |
 | `sala.js` | Sincronização entre a tela da sala e os celulares |
 | `figuras.js` | Figuras das questões (o gráfico V × i), usadas pelas duas telas |
 | `qr.svg` | QR code que abre o `jogar.html`; serve para projetar ou imprimir |

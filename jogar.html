@@ -405,7 +405,13 @@ function desenhaResultado() {
     </div>`);
   }
 
+  const t = dados.turma;
+  const turma = t ? `<p class="aviso">${t.ligou ? "💡 A luz voltou!" : "🌑 A casa ficou no escuro"}</p>
+    <p class="sub">A turma acertou ${esc(t.pct)}% · meta ${esc(t.meta)}%</p>
+    <div class="espacador"></div>` : "";
+
   tela.innerHTML = `<div class="card">
+    ${turma}
     <p class="grande">${meu === 1 ? "🏆" : "💡"}</p>
     <p class="aviso">${certas} de ${TOTAL} certas · ${meusPontos} pontos</p>
     <p class="sub">${meu ? `${meu}º lugar entre ${js.length}` : ""}</p>

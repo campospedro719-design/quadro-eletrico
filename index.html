@@ -171,6 +171,15 @@ button.b.inicio{font-size:1.25rem;padding:12px 26px}
 .rel .qitem{border-top:2px dashed #d8d2c4;padding:10px 0;line-height:1.5;white-space:normal}
 .rel .qitem b.g{color:#1b7a49}
 .rel .fechar{margin-top:16px}
+.rel .meta{margin:12px 0 0;border:3px solid var(--ink);border-radius:16px;padding:10px 14px}
+.rel .meta.ok{background:#fff6cf}
+.rel .meta.nao{background:#e4e7ee}
+.rel .meta-tit{font-family:var(--display);font-size:1.25rem}
+.rel .meta-barra{position:relative;height:22px;margin-top:8px;background:#fff;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
+.rel .meta-barra span{display:block;height:100%;background:var(--red)}
+.rel .meta.ok .meta-barra span{background:var(--green)}
+.rel .meta-barra i{position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;background:var(--ink)}
+.rel tr.pct th{background:#efeee9}
 /* contagem regressiva ocupando a tela da sala */
 .contagem-grande{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none;background:rgba(34,40,58,.62)}
 .contagem-grande span{font-family:var(--display);font-size:min(38vw,32vh);line-height:1;color:var(--yellow);-webkit-text-stroke:6px var(--ink)}
@@ -363,8 +372,25 @@ const M=[
 ];
 const $=id=>document.getElementById(id);
 let st, cur=null, tick=null, left=0;
-function fresh(){return {fixed:{},powered:false,last:"",kwh:4821}}
+function fresh(){return {fixed:{},powered:false,falhou:false,last:"",kwh:4821}}
 let kwhTick=null;
+/* meta da turma em % inteiro (45), vinda do config.js; conta so com inteiros
+   para 45% de 11 alunos nao depender de arredondamento de ponto flutuante */
+const META=(typeof window.META_TURMA==="number"&&window.META_TURMA>0&&window.META_TURMA<=1)
+  ?Math.round(window.META_TURMA*100):45;
+let turma=null;   /* resultado coletivo, calculado so no fim */
+function calculaTurma(res,ids){
+  const porQ={}; let certos=0;
+  Q.forEach(q=>{
+    const r=res[q.n]||{};
+    const c=ids.filter(id=>r[id]&&r[id].alt===q.ok).length;
+    porQ[q.n]=ids.length?Math.round(100*c/ids.length):0;
+    certos+=c;
+  });
+  const total=ids.length*Q.length;
+  return {certos,total,pct:total?Math.round(100*certos/total):0,meta:META,
+    ligou:total===0||certos*100>=META*total,porQ};
+}
 
 function meterSVG(m){
   const fixed=st.fixed[m.n], x=62+38.5+77*(m.n-1), y=196;
@@ -498,11 +524,13 @@ function render(){
   $("family").innerHTML=[CHARS.pai,CHARS.mae,CHARS.filho].map(person).join("");
   desenhaPlacar();
   const done=Object.keys(st.fixed).length;
-  const lcd=$("lcd"); if(st.powered){lcd.textContent="220 V · OK";lcd.classList.remove("err")} else if(st.last){lcd.textContent=st.last;lcd.classList.remove("err")} else {lcd.textContent="FALHA";lcd.classList.add("err")}
+  const lcd=$("lcd"); if(st.falhou){lcd.textContent="TURMA "+turma.pct+"%";lcd.classList.add("err")} else if(st.powered){lcd.textContent="220 V · OK";lcd.classList.remove("err")} else if(st.last){lcd.textContent=st.last;lcd.classList.remove("err")} else {lcd.textContent="FALHA";lcd.classList.add("err")}
   $("progress").textContent=`Circuitos consertados: ${done}/5`;
-  $("hint").textContent=acabou?"Fim de jogo! O relatório da turma está na tela."
+  $("hint").textContent=acabou?(st.falhou
+      ?"A turma ficou abaixo da meta de "+META+"%: o disjuntor geral desarmou e a casa continua no escuro."
+      :"Fim de jogo! O relatório da turma está na tela.")
+    :comecou&&aoVivo?"Cada pessoa responde no próprio celular. A casa só volta a ter luz se a turma acertar pelo menos "+META+"% das questões."
     :!comecou?(aoVivo?"Espere a turma entrar pelo QR code e clique em Iniciar partida.":"Clique em Iniciar partida para começar.")
-    :aoVivo?"Cada pessoa responde no próprio celular. Os circuitos vão sendo rearmados conforme a turma avança."
     :done===4?"Falta 1 circuito: quando ele for consertado, o disjuntor geral arma sozinho."
     :"A próxima questão abre sozinha depois de consertar o circuito.";
   atualizaBotaoInicio();
@@ -556,13 +584,14 @@ $("reset").onclick=async()=>{
   ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
   $("mainSwitch").className.baseVal="";$("electrician").classList.remove("zap","fixing");
   cur=null;jaRevelou=false;comecou=false;contando=false;revelarAgendado=false;acabou=false;
-  respostasFinais={};escondeContagem();fecharRelatorio();render();
+  respostasFinais={};turma=null;escondeContagem();fecharRelatorio();render();
   if(!aoVivo)return;
   await enfileira(async()=>{
     await Sala.apagar("salas/"+COD+"/respostas");
     await Sala.apagar("salas/"+COD+"/gabarito");
     await Sala.apagar("salas/"+COD+"/perguntas");
     await Sala.apagar("salas/"+COD+"/consertados");
+    await Sala.apagar("salas/"+COD+"/turma");
     for(const id of Object.keys(jogadores))
       await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0,q:1,terminou:false});
     await Sala.mesclar("salas/"+COD+"/info",{estado:"lobby",circuito:0,contagem:0});
@@ -597,13 +626,14 @@ async function iniciarPartida(){
   timers.forEach(clearTimeout); clearInterval(kwhTick); $("kwh").textContent="04821"; timers=[];
   st=fresh(); ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
   $("mainSwitch").className.baseVal=""; $("electrician").classList.remove("zap","fixing");
-  cur=null; jaRevelou=false; acabou=false; respostasFinais={};
+  cur=null; jaRevelou=false; acabou=false; respostasFinais={}; turma=null;
   closeQ(); fecharRelatorio(); render();
   if(aoVivo){
     await enfileira(async()=>{
       await Sala.apagar("salas/"+COD+"/respostas");
       await Sala.apagar("salas/"+COD+"/gabarito");
       await Sala.apagar("salas/"+COD+"/consertados");
+      await Sala.apagar("salas/"+COD+"/turma");
       /* as 5 questoes vao para o banco SEM gabarito: cada celular pega a sua */
       const pacote={};
       Q.forEach(q=>{pacote[q.n]={n:q.n,circ:M[q.n-1].name,enunciado:q.text,
@@ -666,20 +696,39 @@ async function encerrar(){
     });
   });
   Object.keys(pontos).forEach(id=>{ if(jogadores[id]) jogadores[id].pontos=pontos[id]; });
+  /* meta coletiva: soma os acertos da sala inteira; quem nao respondeu conta como erro */
+  turma=calculaTurma(res,Object.keys(pontos));
   if(aoVivo){
     await enfileira(async()=>{
       for(const par of Object.entries(pontos))
         await Sala.mesclar("salas/"+COD+"/jogadores/"+par[0],{pontos:par[1]});
       const gab={}; Q.forEach(q=>{gab[q.n]={ok:q.ok,sol:q.sol}});
       await Sala.gravar("salas/"+COD+"/gabarito",gab);
+      await Sala.gravar("salas/"+COD+"/turma",
+        {pct:turma.pct,meta:turma.meta,ligou:turma.ligou,certos:turma.certos,total:turma.total});
       await Sala.mesclar("salas/"+COD+"/info",{estado:"fim"});
     },"O resultado");
   }
   M.forEach(m=>{st.fixed[m.n]=true});
   st.last=M[4].read;
   render();
-  powerOn();
-  timers.push(setTimeout(mostraRelatorio,4600));
+  if(turma.ligou){ powerOn(); timers.push(setTimeout(()=>flash("Turma: "+turma.pct+"% de acerto!"),3400)); }
+  else desarmaGeral();
+  timers.push(setTimeout(mostraRelatorio,turma.ligou?4600:5200));
+}
+
+/* Turma abaixo da meta: o geral tenta armar, nao segura, e os circuitos caem de novo */
+function desarmaGeral(){
+  const sw=$("mainSwitch"), el=$("electrician");
+  sw.classList.add("ready"); say("Armando o disjuntor geral...",1600);
+  timers.push(setTimeout(()=>{
+    sw.classList.remove("ready");
+    st.falhou=true; st.fixed={}; st.last="";
+    render();
+    el.classList.add("zap"); flash("DESARMOU!");
+    say("Só "+turma.pct+"% de acerto!",2400);
+  },1800));
+  timers.push(setTimeout(()=>{ el.classList.remove("zap"); say("A meta era "+META+"%.",2000); },3400));
 }
 
 function mostraRelatorio(){
@@ -701,13 +750,21 @@ function mostraRelatorio(){
   const qlista=Q.map(q=>'<div class="qitem"><b>Questão '+q.n+" · "+escapar(M[q.n-1].name)+"</b> — "+
     escapar(q.text)+'<br>Resposta certa: <b class="g">'+"ABCD"[q.ok]+") "+escapar(q.alts[q.ok][0])+
     "</b><br>"+q.sol+"</div>").join("");
+  const t=turma||calculaTurma(respostasFinais,ids);
+  const pctLinha=Q.map(q=>'<td class="'+(t.porQ[q.n]>=META?"c":"e")+'">'+t.porQ[q.n]+"%</td>").join("");
+  const medidor='<div class="meta '+(t.ligou?"ok":"nao")+'">'+
+    '<div class="meta-tit">'+(t.ligou?"💡 A luz voltou!":"🌑 A casa continua no escuro")+
+      " — a turma acertou <b>"+t.pct+"%</b> ("+t.certos+" de "+t.total+" respostas) · meta "+META+"%</div>"+
+    '<div class="meta-barra"><span style="width:'+Math.min(100,t.pct)+'%"></span>'+
+      '<i style="left:'+META+'%" title="meta"></i></div></div>';
   $("relConteudo").innerHTML=
-    "<h2>Resultado da turma</h2>"+
+    "<h2>Resultado da turma</h2>"+medidor+
     '<p class="leg">'+ids.length+" participante"+(ids.length===1?"":"s")+
       " · 5 questões · cada acerto vale 10 pontos + até 5 de bônus por rapidez</p>"+
-    '<div style="overflow-x:auto"><table><thead><tr><th>Equipe</th>'+cabQ+"<th>Pontos</th></tr></thead>"+
+    '<div style="overflow-x:auto"><table><thead><tr><th>Nome</th>'+cabQ+"<th>Pontos</th></tr></thead>"+
     '<tbody><tr class="gabarito"><th>resposta certa</th>'+gabLinha+'<td class="v">—</td></tr>'+
-    linhas+"</tbody></table></div>"+
+    linhas+'<tr class="pct"><th>acerto da turma</th>'+pctLinha+'<td class="pt">'+t.pct+"%</td></tr>"+
+    "</tbody></table></div>"+
     "<h3>As questões</h3>"+qlista+
     '<div class="fechar"><button class="b" id="fecharRel">Fechar relatório</button></div>';
   $("relatorio").hidden=false;

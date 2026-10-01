@@ -11,3 +11,8 @@
    ============================================================ */
 
 window.CONFIG_DB = "https://quadro-eletrico-85799-default-rtdb.firebaseio.com";
+
+/* Meta da turma: a casa só volta a ter luz se a sala inteira, somada,
+   acertar pelo menos esta fração das questões (0.45 = 45%).
+   Quem deixa o minuto acabar sem responder conta como erro. */
+window.META_TURMA = 0.45;
