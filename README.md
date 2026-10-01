@@ -13,13 +13,15 @@ A turma joga pelo celular: a cena fica na tela da sala, cada pessoa entra lendo 
 1. Abra o jogo na tela da sala (projetor). Aparecem um **QR code** e um **código de 4 letras**.
 2. Cada pessoa aponta a câmera do celular para o QR code, escreve o nome e toca em **Entrar**. Os nomes vão aparecendo no placar da tela grande.
    - Se a câmera não pegar o QR, dá para abrir `.../jogar.html` e digitar o código de 4 letras.
-3. Clique num disjuntor com defeito. A questão aparece na tela da sala **e** nos celulares, com o cronômetro.
-4. A tela da sala mostra quantas pessoas já responderam. Quando quiser, clique em **Revelar resposta**.
-5. Aparece a resolução e quem acertou. Cada acerto vale **10 pontos + até 5 de bônus por rapidez**.
-6. **Consertar circuito e seguir** → repita até os 5 circuitos. Na última, a casa energiza.
-7. **Reiniciar** zera o placar e o quadro, mantendo quem já entrou.
+3. Quando a turma estiver dentro, clique em **▶ Iniciar partida**. O botão só libera depois que pelo menos uma pessoa entrar.
+4. Uma contagem **5 · 4 · 3 · 2 · 1** toma a tela da sala e aparece também nos celulares.
+5. A primeira questão abre sozinha, com **1 minuto** no cronômetro. Vale para todo mundo ao mesmo tempo.
+6. A tela da sala mostra quantas pessoas já responderam. A questão se encerra sozinha quando **o minuto acaba** ou quando **todos já responderam** — o que vier primeiro.
+7. Aparece a resolução e quem acertou. Cada acerto vale **10 pontos + até 5 de bônus por rapidez**.
+8. **Consertar circuito e seguir** → o circuito é rearmado e a questão seguinte abre sozinha. Depois da quinta, a casa energiza.
+9. **Reiniciar** zera o placar e o quadro, mantendo quem já entrou.
 
-> O cronômetro não encerra a questão sozinho: quem decide quando revelar é quem está apresentando. Assim dá tempo de discutir antes da resposta.
+> O avanço entre as questões é no seu tempo: a resolução fica na tela até você clicar em **Consertar circuito e seguir**, para dar espaço de explicar.
 
 ## Ligar o placar ao vivo (uma vez só)
 

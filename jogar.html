@@ -81,6 +81,10 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink);font-weight
 .aviso{font-family:var(--display);font-size:1.3rem;text-align:center;margin:0}
 .sub{font-size:.95rem;font-weight:700;text-align:center;margin:8px 0 0;color:var(--cinza)}
 .grande{font-family:var(--display);font-size:2.4rem;text-align:center;margin:0}
+/* contagem regressiva antes da primeira questão */
+.contagem{font-family:var(--display);font-size:5.5rem;line-height:1;text-align:center;margin:10px 0;color:var(--ink)}
+.contagem.bate{animation:bate .9s ease-out}
+@keyframes bate{0%{transform:scale(.5);opacity:0}28%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
 .ok{color:var(--green)} .nok{color:var(--red)}
 .pulso{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--green);margin-right:6px}
 .caiu .pulso{background:var(--red)}
@@ -282,11 +286,15 @@ function desenha() {
 
   const st = dados.info.estado || "lobby";
   const q = dados.pergunta || null;
-  const marca = `${st}:${q ? q.n : 0}:${dados.revelado ? dados.revelado.n : 0}`;
+  const marca = `${st}:${q ? q.n : 0}:${dados.revelado ? dados.revelado.n : 0}:${dados.info.contagem || 0}`;
   if (marca === etapa) return;   // nada mudou de fato; não redesenha (não perde o toque do dedo)
   etapa = marca;
 
+  /* durante a contagem vale consultar mais rápido, para o número não pular */
+  if (obs) obs.ritmo(st === "contagem" ? 450 : 1500);
+
   pararRelogio();
+  if (st === "contagem") return desenhaContagem(dados.info.contagem);
   if (st === "pergunta" && q) return desenhaPergunta(q);
   if (st === "revelando" && dados.revelado) return desenhaRevelacao(dados.revelado, q);
   if (st === "fim") return desenhaFim();
@@ -299,6 +307,14 @@ function posicao() {
   const ord = js.map(([id, j]) => ({ id, p: j.pontos || 0 })).sort((a, b) => b.p - a.p);
   const i = ord.findIndex((x) => x.id === euId);
   return i < 0 ? null : { lugar: i + 1, total: ord.length };
+}
+
+function desenhaContagem(n) {
+  tela.innerHTML = `<div class="card" style="text-align:center">
+    <p class="aviso">Prepare-se!</p>
+    <p class="contagem bate">${n ? esc(n) : "…"}</p>
+    <p class="sub">A primeira questão vem aí</p>
+  </div>`;
 }
 
 function desenhaEspera() {

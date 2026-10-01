@@ -151,6 +151,12 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
 .quem span.ok{background:#dff5e8;border-color:var(--green)}
 .quem span.nok{background:#ffe3e3;border-color:var(--red);opacity:.8}
 .qhead .dir{display:flex;gap:10px;align-items:center}
+button.b.inicio{font-size:1.25rem;padding:12px 26px}
+/* contagem regressiva ocupando a tela da sala */
+.contagem-grande{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none;background:rgba(34,40,58,.62)}
+.contagem-grande span{font-family:var(--display);font-size:min(38vw,32vh);line-height:1;color:var(--yellow);-webkit-text-stroke:6px var(--ink)}
+.contagem-grande.bate span{animation:bate .95s ease-out}
+@keyframes bate{0%{transform:scale(.45);opacity:0}28%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
 @media (max-width:860px){
   .sala img{width:92px;height:92px}
   .sala .cod{font-size:1.8rem}
@@ -264,6 +270,7 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
   <div class="bar">
     <div class="teams" id="teams"></div>
     <div class="progress" id="progress"></div>
+    <button class="b go inicio" id="iniciar" disabled>▶ Iniciar partida</button>
     <button class="b" id="reset">Reiniciar</button>
   </div>
   <p class="hint" id="hint">Clique num disjuntor com defeito para abrir a questão.</p>
@@ -281,6 +288,7 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
   </div>
 </div>
 <div id="fx"></div>
+<div class="contagem-grande" id="contagemGrande" hidden><span></span></div>
 
 <script src="config.js"></script>
 <script src="sala.js"></script>
@@ -293,6 +301,7 @@ let jogadores={}, respostas={}, aoVivo=false, jaRevelou=false, obsSala=null;
    DEPOIS da publicação da questão seguinte e apagá-la — o que faz o celular
    de todo mundo perder a pergunta. Tudo que escreve na sala passa por aqui,
    na ordem em que foi pedido. */
+let comecou=false, contando=false, revelarAgendado=false, salaPronta=false;
 let fila=Promise.resolve();
 function enfileira(tarefa,oQue){
   fila=fila.then(tarefa).catch(e=>aviso(oQue+" não chegou aos celulares ("+e.message+").",true));
@@ -300,7 +309,7 @@ function enfileira(tarefa,oQue){
 }
 const escapar=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const Q=[
- {n:1,room:1,circ:"Tomadas · sala",lvl:"Compreensão conceitual",t:45,
+ {n:1,room:1,circ:"Tomadas · sala",lvl:"Compreensão conceitual",t:60,
   text:"Um cabo de cobre de 2,5 mm² é trocado por outro de cobre, de mesmo comprimento, com 6 mm². O que acontece com a resistividade (ρ), a condutividade (σ) e a resistência (R)?",
   alts:[["ρ e R diminuem; σ aumenta","Confunde propriedade do material (ρ) com a do objeto (R)."],["ρ e σ não mudam; R cai para ≈ 42%",""],["ρ e σ não mudam; R aumenta ≈ 2,4 vezes","Inverteu a relação: R é inversamente proporcional à área."],["ρ não muda; σ e R diminuem","σ = 1/ρ: se ρ não muda, σ também não."]],ok:1,
   sol:"ρ e σ dependem só do material (continua cobre). R = ρL/A ⇒ R₂/R₁ = 2,5/6 ≈ 0,42.",gl:"Resistência · Resistividade · Condutividade — R = ρL/A ; σ = 1/ρ"},
@@ -312,11 +321,11 @@ const Q=[
   text:"Um chuveiro de 5500 W / 220 V fica ligado por 10 min. Quantos elétrons atravessam a seção do fio? (e = 1,6 × 10⁻¹⁹ C)",
   alts:[["9,4 × 10²²",""],["1,6 × 10²⁰","Esse é o número de elétrons por segundo."],["2,4 × 10⁻¹⁵","Multiplicou q por e em vez de dividir."],["1,6 × 10²¹","Usou Δt = 10 s, sem converter minutos."]],ok:0,
   sol:"i = P/V = 25 A → q = i·Δt = 25 × 600 = 15 000 C → n = q/e ≈ 9,4 × 10²² elétrons.",gl:"Corrente · Carga elétrica · Carga elementar — i = Δq/Δt ; q = n·e"},
- {n:4,room:4,circ:"Tomadas · cozinha (DR 30 mA)",lvl:"Estudo de caso",t:45,
+ {n:4,room:4,circ:"Tomadas · cozinha (DR 30 mA)",lvl:"Estudo de caso",t:60,
   text:"O alicate amperímetro mede 10,00 A na fase e 9,96 A no neutro de um circuito com DR de 30 mA. O DR:",
   alts:[["Não desarma: 9,96 A ≈ 10 A","A diferença de 40 mA é maior que 30 mA."],["Desarma porque 10 A > 30 mA","Confunde corrente de operação com corrente residual."],["Não desarma: a diferença vira calor","O efeito Joule dissipa energia, não carga."],["Desarma: 40 mA saem por outro caminho (fuga à terra)",""]],ok:3,
   sol:"Lei dos nós: sem fuga, tudo que entra pela fase volta pelo neutro. 10,00 − 9,96 = 40 mA > 30 mA ⇒ DR desarma.",gl:"Conservação da carga (lei dos nós) — Σi(entram) = Σi(saem)"},
- {n:5,room:0,circ:"Disjuntor geral",lvl:"Análise de afirmativas",t:90,
+ {n:5,room:0,circ:"Disjuntor geral",lvl:"Análise de afirmativas",t:60,
   text:"Cabo de cobre de 6 mm² com 25 A (n = 8,49 × 10²⁸ m⁻³). I) J ≈ 4,2 × 10⁶ A/m². II) v_d ≈ 0,3 mm/s, por isso o chuveiro demora a começar a aquecer. III) Trocando por alumínio de mesma seção, a perda por efeito Joule nos fios aumenta ≈ 60%.",
   alts:[["Apenas I","III também está correta (ρAl/ρCu ≈ 1,63)."],["Apenas II","II tem o valor certo e a conclusão errada."],["Apenas I e III",""],["I, II e III","Quem se propaga rápido é o campo elétrico, não os elétrons."]],ok:2,
   sol:"I: J = i/A = 25/6×10⁻⁶ ≈ 4,2×10⁶ A/m² ✔. II: v_d está certo, mas o campo elétrico se propaga quase instantaneamente ✘. III: P = i²R e R ∝ ρ ⇒ 2,75/1,69 ≈ 1,63 ✔.",gl:"Densidade de corrente · Condutor · Condutividade · Efeito Joule — J = i/A = n·e·v_d"}
@@ -360,10 +369,11 @@ function openQ(n){
   $("actions").innerHTML=`<button class="b" id="bGl">Consultar glossário</button><button class="b hl" id="bRev">Revelar resposta</button><button class="b" id="bClose">Fechar</button>`;
   $("bGl").onclick=()=>{$("glossBox").innerHTML=`<div class="box"><h3>Glossário · Etapa 1</h3>${cur.gl}</div>`};
   $("bRev").onclick=reveal; $("bClose").onclick=closeQ;
-  $("stage").hidden=false; jaRevelou=false; startTimer(cur.t); publicaPergunta(cur,m);
+  $("stage").hidden=false; jaRevelou=false; revelarAgendado=false; startTimer(cur.t); publicaPergunta(cur,m);
 }
 function startTimer(s){clearInterval(tick);left=s;const t=$("timer");t.textContent=left;t.classList.remove("low");
-  tick=setInterval(()=>{left--;t.textContent=Math.max(left,0);if(left<=10)t.classList.add("low");if(left<=0)clearInterval(tick)},1000)}
+  tick=setInterval(()=>{left--;t.textContent=Math.max(left,0);if(left<=10)t.classList.add("low");
+    if(left<=0){clearInterval(tick); if(!jaRevelou&&!$("stage").hidden) reveal();}},1000)}
 async function reveal(){
   clearInterval(tick); jaRevelou=true; $("contagem").hidden=true;
   cur.alts.forEach((a,i)=>{const el=$("alt"+i);el.classList.add(i===cur.ok?"correct":"wrong");el.querySelector(".why").hidden=false});
@@ -467,9 +477,13 @@ function render(){
   const done=Object.keys(st.fixed).length;
   const lcd=$("lcd"); if(st.powered){lcd.textContent="220 V · OK";lcd.classList.remove("err")} else if(st.last){lcd.textContent=st.last;lcd.classList.remove("err")} else {lcd.textContent="FALHA";lcd.classList.add("err")}
   $("progress").textContent=`Circuitos consertados: ${done}/5`;
-  $("hint").textContent=st.powered?"Casa energizada! Fim de jogo.":done===4?"Falta 1 circuito: quando ele for consertado, o disjuntor geral arma sozinho.":"Clique num disjuntor com defeito para abrir a questão.";
+  $("hint").textContent=st.powered?"Casa energizada! Fim de jogo."
+    :!comecou?(aoVivo?"Espere a turma entrar pelo QR code e clique em Iniciar partida.":"Clique em Iniciar partida para começar.")
+    :done===4?"Falta 1 circuito: quando ele for consertado, o disjuntor geral arma sozinho."
+    :"A próxima questão abre sozinha depois de consertar o circuito.";
+  atualizaBotaoInicio();
   document.querySelectorAll(".brk.broken").forEach(g=>{
-    const open=()=>openQ(+g.dataset.n); g.onclick=open; g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}};
+    const open=()=>{ if(comecou) openQ(+g.dataset.n) }; g.onclick=open; g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}};
   });
 }
 function finish(){
@@ -486,7 +500,8 @@ function finish(){
     st.fixed[n]=true; st.last=M[n-1].read;
     if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/consertados",{[n]:true}),"O conserto do circuito");
     render();
-    if(Object.keys(st.fixed).length===5) setTimeout(powerOn,1100);
+    if(Object.keys(st.fixed).length===5) timers.push(setTimeout(powerOn,1100));
+    else if(comecou) timers.push(setTimeout(proximoCircuito,1500));
   };
   const el=$("electrician");
   if(bem){ fix(); el.classList.add("fixing"); say("Consertado!",1300); flash("Consertado!"); setTimeout(()=>el.classList.remove("fixing"),1300); }
@@ -514,7 +529,8 @@ $("reset").onclick=async()=>{
   timers.forEach(clearTimeout);clearInterval(kwhTick);$("kwh").textContent="04821";timers=[];st=fresh();
   ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
   $("mainSwitch").className.baseVal="";$("electrician").classList.remove("zap","fixing");
-  cur=null;jaRevelou=false;render();
+  cur=null;jaRevelou=false;comecou=false;contando=false;revelarAgendado=false;
+  escondeContagem();render();
   if(!aoVivo)return;
   await enfileira(async()=>{
     await Sala.apagar("salas/"+COD+"/respostas");
@@ -526,6 +542,52 @@ $("reset").onclick=async()=>{
   },"O placar zerado")
 };
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("stage").hidden)closeQ()});
+/* ---------- comeco da partida ---------- */
+const espera=ms=>new Promise(r=>timers.push(setTimeout(r,ms)));
+function mostraContagem(k){
+  const el=$("contagemGrande");
+  el.hidden=false; el.querySelector("span").textContent=k;
+  el.classList.remove("bate"); void el.offsetWidth; el.classList.add("bate");
+}
+function escondeContagem(){ $("contagemGrande").hidden=true }
+/* Enquanto nao se sabe se a sala abriu, o botao fica desligado: ligado cedo
+   demais, alguem comeca a partida antes da turma conseguir entrar. */
+function atualizaBotaoInicio(){
+  const bi=$("iniciar"); if(!bi)return;
+  bi.hidden=comecou;
+  bi.disabled = contando || !salaPronta || (aoVivo && !Object.keys(jogadores).length);
+}
+function proximoCircuito(){
+  const falta=M.map(m=>m.n).filter(n=>!st.fixed[n]);
+  if(falta.length) openQ(falta[0]);
+}
+async function iniciarPartida(){
+  if(contando||comecou)return;
+  contando=true; $("iniciar").disabled=true;
+  /* partida nova comeca do zero, mas sem derrubar quem ja entrou */
+  timers.forEach(clearTimeout); clearInterval(kwhTick); $("kwh").textContent="04821"; timers=[];
+  st=fresh(); ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
+  $("mainSwitch").className.baseVal=""; $("electrician").classList.remove("zap","fixing");
+  cur=null; jaRevelou=false; closeQ(); render();
+  if(aoVivo){
+    await enfileira(async()=>{
+      await Sala.apagar("salas/"+COD+"/respostas");
+      await Sala.apagar("salas/"+COD+"/revelado");
+      await Sala.apagar("salas/"+COD+"/pergunta");
+      await Sala.apagar("salas/"+COD+"/consertados");
+      for(const id of Object.keys(jogadores)) await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0});
+    },"O início da partida");
+  }
+  for(let k=5;k>=1;k--){
+    mostraContagem(k);
+    if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"contagem",contagem:k}),"A contagem");
+    await espera(1000);
+  }
+  escondeContagem();
+  comecou=true; contando=false; render();
+  proximoCircuito();
+}
+
 /* ---------- sala ao vivo ---------- */
 function aviso(txt,ruim){const b=$("banner");b.hidden=false;b.className="banner"+(ruim?" ruim":"");b.textContent=txt}
 function erroRede(e){
@@ -538,21 +600,24 @@ async function abrirSala(){
   if(!Sala.ligado()){
     $("painelSala").hidden=true;
     aviso("Modo local: placar ao vivo desligado (falta preencher o config.js). Para apresentar com equipes no papel, abra classico.html.",false);
+    salaPronta=true; render();
     return;
   }
   try{
     await Sala.gravar("salas/"+COD+"/info",{estado:"lobby",circuito:0,criada:Date.now()});
     await Sala.gravar("salaAtiva",{codigo:COD,criada:Date.now()});
-    aoVivo=true;
+    aoVivo=true; salaPronta=true;
     $("codigo").textContent=COD;
+    render();
     obsSala=Sala.observar("salas/"+COD,d=>{
       jogadores=(d&&d.jogadores)||{};
       respostas=(d&&d.respostas)||{};
-      desenhaPlacar();atualizaContagem();
+      desenhaPlacar();atualizaContagem();atualizaBotaoInicio();
     },erroRede,1500);
   }catch(e){
     $("painelSala").hidden=true;
     aviso("Não consegui abrir a sala ("+e.message+"). O jogo continua, mas sem celulares.",true);
+    salaPronta=true; render();
   }
 }
 function desenhaPlacar(){
@@ -577,9 +642,19 @@ function atualizaContagem(){
   if(!aoVivo||!cur||$("stage").hidden||jaRevelou){el.hidden=true;return}
   const res=respostas[cur.n]||{}, r=Object.keys(res).length, t=Object.keys(jogadores).length;
   el.hidden=false;
-  el.textContent=r+" de "+t+" responderam";
   el.classList.toggle("cheio",t>0&&r>=t);
+  if(t>0&&r>=t){
+    el.textContent="todos responderam!";
+    /* ninguem fica olhando o cronometro a toa: revela sozinho */
+    if(!revelarAgendado){
+      revelarAgendado=true;
+      timers.push(setTimeout(()=>{ if(!jaRevelou&&!$("stage").hidden) reveal(); },1200));
+    }
+  } else {
+    el.textContent=r+" de "+t+" responderam";
+  }
 }
+$("iniciar").onclick=iniciarPartida;
 st=fresh(); render(); abrirSala();
 </script>
 
