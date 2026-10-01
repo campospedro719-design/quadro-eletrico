@@ -15,13 +15,17 @@ A turma joga pelo celular: a cena fica na tela da sala, cada pessoa entra lendo 
    - Se a câmera não pegar o QR, dá para abrir `.../jogar.html` e digitar o código de 4 letras.
 3. Quando a turma estiver dentro, clique em **▶ Iniciar partida**. O botão só libera depois que pelo menos uma pessoa entrar.
 4. Uma contagem **5 · 4 · 3 · 2 · 1** toma a tela da sala e aparece também nos celulares.
-5. A primeira questão abre sozinha, com **1 minuto** no cronômetro. Vale para todo mundo ao mesmo tempo.
-6. A tela da sala mostra quantas pessoas já responderam. A questão se encerra sozinha quando **o minuto acaba** ou quando **todos já responderam** — o que vier primeiro.
-7. Aparece a resolução e quem acertou. Cada acerto vale **10 pontos + até 5 de bônus por rapidez**.
-8. **Consertar circuito e seguir** → o circuito é rearmado e a questão seguinte abre sozinha. Depois da quinta, a casa energiza.
-9. **Reiniciar** zera o placar e o quadro, mantendo quem já entrou.
+5. As 5 questões vão para os celulares. **Cada pessoa responde no próprio ritmo**: escolhe a alternativa, toca em **Próxima questão →** e segue.
+6. Cada questão tem **1 minuto**, contado a partir do momento em que aparece naquele celular. Se o minuto acabar sem resposta, pula sozinho para a próxima.
+7. Durante a prova, **ninguém descobre se acertou**. A tela da sala mostra só o progresso (`Pedro 3/5 · Ana 2/5`), e os disjuntores vão sendo rearmados conforme a turma avança.
+8. Quando todo mundo termina, a casa energiza e o **relatório da turma** aparece na tela: uma tabela com a marcação de cada equipe em cada questão, o gabarito, a pontuação, e depois o enunciado e a resolução de cada uma.
+9. **Reiniciar** zera tudo, mantendo quem já entrou. **Ver relatório** reabre a tabela.
 
-> O avanço entre as questões é no seu tempo: a resolução fica na tela até você clicar em **Consertar circuito e seguir**, para dar espaço de explicar.
+> Se alguém largar o celular no meio e travar a turma, **Encerrar agora** fecha a prova e mostra o resultado com o que já foi respondido.
+
+### Pontuação
+
+Cada acerto vale **10 pontos + até 5 de bônus por rapidez** (quanto mais rápido dentro do minuto, maior o bônus). A conta só é feita no fim — durante a prova o placar não existe para ninguém.
 
 ## Ligar o placar ao vivo (uma vez só)
 

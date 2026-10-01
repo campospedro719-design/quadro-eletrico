@@ -152,6 +152,25 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
 .quem span.nok{background:#ffe3e3;border-color:var(--red);opacity:.8}
 .qhead .dir{display:flex;gap:10px;align-items:center}
 button.b.inicio{font-size:1.25rem;padding:12px 26px}
+/* relatorio final, projetado para a turma inteira ler */
+.relatorio{position:fixed;inset:0;background:rgba(34,40,58,.75);z-index:12;display:flex;align-items:center;justify-content:center;padding:18px}
+.rel{background:var(--paper);border:4px solid var(--ink);border-radius:22px;max-width:1500px;width:100%;max-height:100%;overflow:auto;padding:20px 24px;box-shadow:0 10px 0 var(--ink)}
+.rel h2{font-family:var(--display);font-size:2rem;margin:0}
+.rel h3{font-family:var(--display);font-size:1.3rem;margin:18px 0 0}
+.rel p.leg{margin:4px 0 0;font-weight:700;color:var(--panel-dark)}
+.rel table{border-collapse:collapse;width:100%;margin:14px 0 4px;font-variant-numeric:tabular-nums}
+.rel th,.rel td{border:2px solid var(--ink);padding:7px 10px;text-align:center;font-weight:800;white-space:nowrap}
+.rel thead th{background:var(--ink);color:var(--yellow);font-family:var(--display);font-size:1.05rem}
+.rel tbody th{background:#fff;text-align:left;font-family:var(--display);font-size:1.05rem}
+.rel td.c{background:#dff5e8;color:#1b7a49}
+.rel td.e{background:#ffe3e3;color:#a32c2e}
+.rel td.v{background:#efeee9;color:var(--panel-dark)}
+.rel td.gab{background:var(--yellow)}
+.rel td.pt{background:var(--ink);color:var(--yellow);font-family:var(--display);font-size:1.1rem}
+.rel tr.gabarito th{background:var(--yellow)}
+.rel .qitem{border-top:2px dashed #d8d2c4;padding:10px 0;line-height:1.5;white-space:normal}
+.rel .qitem b.g{color:#1b7a49}
+.rel .fechar{margin-top:16px}
 /* contagem regressiva ocupando a tela da sala */
 .contagem-grande{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none;background:rgba(34,40,58,.62)}
 .contagem-grande span{font-family:var(--display);font-size:min(38vw,32vh);line-height:1;color:var(--yellow);-webkit-text-stroke:6px var(--ink)}
@@ -271,6 +290,8 @@ button.b.inicio{font-size:1.25rem;padding:12px 26px}
     <div class="teams" id="teams"></div>
     <div class="progress" id="progress"></div>
     <button class="b go inicio" id="iniciar" disabled>▶ Iniciar partida</button>
+    <button class="b bad" id="encerrar" hidden>Encerrar agora</button>
+    <button class="b hl" id="verRel" hidden>Ver relatório</button>
     <button class="b" id="reset">Reiniciar</button>
   </div>
   <p class="hint" id="hint">Clique num disjuntor com defeito para abrir a questão.</p>
@@ -289,6 +310,7 @@ button.b.inicio{font-size:1.25rem;padding:12px 26px}
 </div>
 <div id="fx"></div>
 <div class="contagem-grande" id="contagemGrande" hidden><span></span></div>
+<div class="relatorio" id="relatorio" hidden><div class="rel" id="relConteudo"></div></div>
 
 <script src="config.js"></script>
 <script src="sala.js"></script>
@@ -302,6 +324,7 @@ let jogadores={}, respostas={}, aoVivo=false, jaRevelou=false, obsSala=null;
    de todo mundo perder a pergunta. Tudo que escreve na sala passa por aqui,
    na ordem em que foi pedido. */
 let comecou=false, contando=false, revelarAgendado=false, salaPronta=false;
+let acabou=false, respostasFinais={};
 let fila=Promise.resolve();
 function enfileira(tarefa,oQue){
   fila=fila.then(tarefa).catch(e=>aviso(oQue+" não chegou aos celulares ("+e.message+").",true));
@@ -477,13 +500,16 @@ function render(){
   const done=Object.keys(st.fixed).length;
   const lcd=$("lcd"); if(st.powered){lcd.textContent="220 V · OK";lcd.classList.remove("err")} else if(st.last){lcd.textContent=st.last;lcd.classList.remove("err")} else {lcd.textContent="FALHA";lcd.classList.add("err")}
   $("progress").textContent=`Circuitos consertados: ${done}/5`;
-  $("hint").textContent=st.powered?"Casa energizada! Fim de jogo."
+  $("hint").textContent=acabou?"Fim de jogo! O relatório da turma está na tela."
     :!comecou?(aoVivo?"Espere a turma entrar pelo QR code e clique em Iniciar partida.":"Clique em Iniciar partida para começar.")
+    :aoVivo?"Cada pessoa responde no próprio celular. Os circuitos vão sendo rearmados conforme a turma avança."
     :done===4?"Falta 1 circuito: quando ele for consertado, o disjuntor geral arma sozinho."
     :"A próxima questão abre sozinha depois de consertar o circuito.";
   atualizaBotaoInicio();
   document.querySelectorAll(".brk.broken").forEach(g=>{
-    const open=()=>{ if(comecou) openQ(+g.dataset.n) }; g.onclick=open; g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}};
+    /* no modo ao vivo cada pessoa responde no proprio celular: a tela da
+       sala nao abre questao nenhuma, so acompanha o progresso */
+    const open=()=>{ if(comecou&&!aoVivo) openQ(+g.dataset.n) }; g.onclick=open; g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}};
   });
 }
 function finish(){
@@ -529,16 +555,17 @@ $("reset").onclick=async()=>{
   timers.forEach(clearTimeout);clearInterval(kwhTick);$("kwh").textContent="04821";timers=[];st=fresh();
   ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
   $("mainSwitch").className.baseVal="";$("electrician").classList.remove("zap","fixing");
-  cur=null;jaRevelou=false;comecou=false;contando=false;revelarAgendado=false;
-  escondeContagem();render();
+  cur=null;jaRevelou=false;comecou=false;contando=false;revelarAgendado=false;acabou=false;
+  respostasFinais={};escondeContagem();fecharRelatorio();render();
   if(!aoVivo)return;
   await enfileira(async()=>{
     await Sala.apagar("salas/"+COD+"/respostas");
-    await Sala.apagar("salas/"+COD+"/revelado");
-    await Sala.apagar("salas/"+COD+"/pergunta");
+    await Sala.apagar("salas/"+COD+"/gabarito");
+    await Sala.apagar("salas/"+COD+"/perguntas");
     await Sala.apagar("salas/"+COD+"/consertados");
-    for(const id of Object.keys(jogadores)) await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0});
-    await Sala.mesclar("salas/"+COD+"/info",{estado:"lobby",circuito:0});
+    for(const id of Object.keys(jogadores))
+      await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0,q:1,terminou:false});
+    await Sala.mesclar("salas/"+COD+"/info",{estado:"lobby",circuito:0,contagem:0});
   },"O placar zerado")
 };
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("stage").hidden)closeQ()});
@@ -556,6 +583,8 @@ function atualizaBotaoInicio(){
   const bi=$("iniciar"); if(!bi)return;
   bi.hidden=comecou;
   bi.disabled = contando || !salaPronta || (aoVivo && !Object.keys(jogadores).length);
+  const be=$("encerrar"); if(be) be.hidden=!(aoVivo&&comecou&&!acabou);
+  const bv=$("verRel"); if(bv) bv.hidden=!acabou;
 }
 function proximoCircuito(){
   const falta=M.map(m=>m.n).filter(n=>!st.fixed[n]);
@@ -563,19 +592,25 @@ function proximoCircuito(){
 }
 async function iniciarPartida(){
   if(contando||comecou)return;
-  contando=true; $("iniciar").disabled=true;
+  contando=true; atualizaBotaoInicio();
   /* partida nova comeca do zero, mas sem derrubar quem ja entrou */
   timers.forEach(clearTimeout); clearInterval(kwhTick); $("kwh").textContent="04821"; timers=[];
   st=fresh(); ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
   $("mainSwitch").className.baseVal=""; $("electrician").classList.remove("zap","fixing");
-  cur=null; jaRevelou=false; closeQ(); render();
+  cur=null; jaRevelou=false; acabou=false; respostasFinais={};
+  closeQ(); fecharRelatorio(); render();
   if(aoVivo){
     await enfileira(async()=>{
       await Sala.apagar("salas/"+COD+"/respostas");
-      await Sala.apagar("salas/"+COD+"/revelado");
-      await Sala.apagar("salas/"+COD+"/pergunta");
+      await Sala.apagar("salas/"+COD+"/gabarito");
       await Sala.apagar("salas/"+COD+"/consertados");
-      for(const id of Object.keys(jogadores)) await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0});
+      /* as 5 questoes vao para o banco SEM gabarito: cada celular pega a sua */
+      const pacote={};
+      Q.forEach(q=>{pacote[q.n]={n:q.n,circ:M[q.n-1].name,enunciado:q.text,
+        alts:q.alts.map(a=>a[0]),t:q.t,fig:q.fig||null}});
+      await Sala.gravar("salas/"+COD+"/perguntas",pacote);
+      for(const id of Object.keys(jogadores))
+        await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0,q:1,terminou:false});
     },"O início da partida");
   }
   for(let k=5;k>=1;k--){
@@ -584,9 +619,101 @@ async function iniciarPartida(){
     await espera(1000);
   }
   escondeContagem();
-  comecou=true; contando=false; render();
-  proximoCircuito();
+  comecou=true; contando=false;
+  if(aoVivo){
+    enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"jogando",contagem:0}),"O começo");
+    render();
+  } else {
+    render(); proximoCircuito();   /* sem celulares, o jogo roda na propria tela */
+  }
 }
+
+/* Acompanha a turma: conserta o circuito n quando TODO MUNDO ja passou da
+   questao n (respondendo ou deixando o minuto acabar) e encerra quando
+   todos terminaram. */
+function progressoPartida(){
+  if(!aoVivo||!comecou||acabou)return;
+  const ids=Object.keys(jogadores);
+  if(!ids.length)return;
+  let mudou=false;
+  for(let n=1;n<=5;n++){
+    if(st.fixed[n])continue;
+    const passaram=ids.every(id=>{const j=jogadores[id]||{};return j.terminou||(j.q||1)>n});
+    if(passaram){ st.fixed[n]=true; st.last=M[n-1].read; mudou=true; }
+  }
+  if(mudou)render();
+  if(ids.every(id=>(jogadores[id]||{}).terminou)) encerrar();
+}
+
+async function encerrar(){
+  if(acabou)return;
+  acabou=true;
+  $("encerrar").hidden=true;
+  let res={};
+  if(aoVivo){ try{ res=(await Sala.ler("salas/"+COD+"/respostas"))||{} }catch(e){} }
+  respostasFinais=res;
+  /* a contagem de pontos so acontece agora, no fim */
+  const pontos={};
+  Object.keys(jogadores).forEach(id=>{pontos[id]=0});
+  Q.forEach(q=>{
+    const r=res[q.n]||{};
+    Object.keys(pontos).forEach(id=>{
+      const a=r[id];
+      if(a&&a.alt===q.ok){
+        const frac=1-(a.ms||0)/((q.t||60)*1000);
+        pontos[id]+=10+Math.max(0,Math.min(5,Math.round(5*frac)));
+      }
+    });
+  });
+  Object.keys(pontos).forEach(id=>{ if(jogadores[id]) jogadores[id].pontos=pontos[id]; });
+  if(aoVivo){
+    await enfileira(async()=>{
+      for(const par of Object.entries(pontos))
+        await Sala.mesclar("salas/"+COD+"/jogadores/"+par[0],{pontos:par[1]});
+      const gab={}; Q.forEach(q=>{gab[q.n]={ok:q.ok,sol:q.sol}});
+      await Sala.gravar("salas/"+COD+"/gabarito",gab);
+      await Sala.mesclar("salas/"+COD+"/info",{estado:"fim"});
+    },"O resultado");
+  }
+  M.forEach(m=>{st.fixed[m.n]=true});
+  st.last=M[4].read;
+  render();
+  powerOn();
+  timers.push(setTimeout(mostraRelatorio,4600));
+}
+
+function mostraRelatorio(){
+  const ids=Object.keys(jogadores).sort((a,b)=>
+    ((jogadores[b].pontos||0)-(jogadores[a].pontos||0)) ||
+    String(jogadores[a].nome||"").localeCompare(String(jogadores[b].nome||"")));
+  const cabQ=Q.map(q=>'<th>Q'+q.n+"</th>").join("");
+  const gabLinha=Q.map(q=>'<td class="gab">'+"ABCD"[q.ok]+"</td>").join("");
+  const linhas=ids.map(id=>{
+    const cels=Q.map(q=>{
+      const a=(respostasFinais[q.n]||{})[id];
+      if(!a||a.alt===undefined||a.alt===null) return '<td class="v">—</td>';
+      const certo=a.alt===q.ok;
+      return '<td class="'+(certo?"c":"e")+'">'+"ABCD"[a.alt]+(certo?" ✓":" ✗")+"</td>";
+    }).join("");
+    return "<tr><th>"+escapar(jogadores[id].nome||"?")+"</th>"+cels+
+      '<td class="pt">'+(jogadores[id].pontos||0)+"</td></tr>";
+  }).join("");
+  const qlista=Q.map(q=>'<div class="qitem"><b>Questão '+q.n+" · "+escapar(M[q.n-1].name)+"</b> — "+
+    escapar(q.text)+'<br>Resposta certa: <b class="g">'+"ABCD"[q.ok]+") "+escapar(q.alts[q.ok][0])+
+    "</b><br>"+q.sol+"</div>").join("");
+  $("relConteudo").innerHTML=
+    "<h2>Resultado da turma</h2>"+
+    '<p class="leg">'+ids.length+" participante"+(ids.length===1?"":"s")+
+      " · 5 questões · cada acerto vale 10 pontos + até 5 de bônus por rapidez</p>"+
+    '<div style="overflow-x:auto"><table><thead><tr><th>Equipe</th>'+cabQ+"<th>Pontos</th></tr></thead>"+
+    '<tbody><tr class="gabarito"><th>resposta certa</th>'+gabLinha+'<td class="v">—</td></tr>'+
+    linhas+"</tbody></table></div>"+
+    "<h3>As questões</h3>"+qlista+
+    '<div class="fechar"><button class="b" id="fecharRel">Fechar relatório</button></div>';
+  $("relatorio").hidden=false;
+  $("fecharRel").onclick=fecharRelatorio;
+}
+function fecharRelatorio(){ const r=$("relatorio"); if(r) r.hidden=true; }
 
 /* ---------- sala ao vivo ---------- */
 function aviso(txt,ruim){const b=$("banner");b.hidden=false;b.className="banner"+(ruim?" ruim":"");b.textContent=txt}
@@ -612,7 +739,7 @@ async function abrirSala(){
     obsSala=Sala.observar("salas/"+COD,d=>{
       jogadores=(d&&d.jogadores)||{};
       respostas=(d&&d.respostas)||{};
-      desenhaPlacar();atualizaContagem();atualizaBotaoInicio();
+      desenhaPlacar();atualizaContagem();atualizaBotaoInicio();progressoPartida();
     },erroRede,1500);
   }catch(e){
     $("painelSala").hidden=true;
@@ -620,13 +747,24 @@ async function abrirSala(){
     salaPronta=true; render();
   }
 }
+/* Durante a partida a barra mostra PROGRESSO, nunca acerto nem pontuacao:
+   o resultado so aparece no fim, no relatorio. */
 function desenhaPlacar(){
-  const js=Object.entries(jogadores).map(([id,j])=>({id:id,nome:j.nome||"?",p:j.pontos||0}))
-    .sort((a,b)=>b.p-a.p||a.nome.localeCompare(b.nome));
+  const js=Object.entries(jogadores).map(([id,j])=>
+    ({id:id,nome:j.nome||"?",p:j.pontos||0,q:j.q||1,fim:!!j.terminou}));
   if(aoVivo)$("nJog").textContent=js.length===1?"1 jogador":js.length+" jogadores";
-  $("teams").innerHTML=js.length
-    ? js.map((j,i)=>'<div class="team'+(i===0&&j.p>0?" lider":"")+'">'+escapar(j.nome)+"<b>"+j.p+"</b></div>").join("")
-    : '<div class="team">esperando jogadores<b>0</b></div>';
+  if(!js.length){ $("teams").innerHTML='<div class="team">esperando jogadores<b>0</b></div>'; return; }
+  if(acabou){
+    js.sort((a,b)=>b.p-a.p||a.nome.localeCompare(b.nome));
+    $("teams").innerHTML=js.map((j,i)=>'<div class="team'+(i===0?" lider":"")+'">'+escapar(j.nome)+"<b>"+j.p+"</b></div>").join("");
+  } else if(comecou&&aoVivo){
+    js.sort((a,b)=>a.nome.localeCompare(b.nome));
+    $("teams").innerHTML=js.map(j=>'<div class="team'+(j.fim?" lider":"")+'">'+escapar(j.nome)+
+      "<b>"+(j.fim?"✓":Math.min(j.q,5)+"/5")+"</b></div>").join("");
+  } else {
+    js.sort((a,b)=>a.nome.localeCompare(b.nome));
+    $("teams").innerHTML=js.map(j=>'<div class="team">'+escapar(j.nome)+"<b>•</b></div>").join("");
+  }
 }
 function publicaPergunta(q,m){
   if(!aoVivo)return Promise.resolve();
@@ -655,6 +793,8 @@ function atualizaContagem(){
   }
 }
 $("iniciar").onclick=iniciarPartida;
+$("encerrar").onclick=()=>{ if(confirm("Encerrar agora e mostrar o resultado?")) encerrar(); };
+$("verRel").onclick=()=>{ if(acabou) mostraRelatorio(); };
 st=fresh(); render(); abrirSala();
 </script>
 
