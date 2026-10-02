@@ -83,11 +83,11 @@ svg text{font-family:var(--display)}
 .family .char{animation:sway 2.4s ease-in-out infinite}
 @keyframes sway{50%{transform:rotate(-2deg)}}
 @keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px) scaleY(1.04)}}
-#electrician.zap .hair,#electrician.zap .arms-up,#electrician.zap .sad,#electrician.zap .brow-sad{display:inline}
-#electrician.zap .arms-down,#electrician.zap .happy,#electrician.zap .brow-happy{display:none}
-#electrician.zap{animation:shake .08s linear 14}
-#electrician.zap .shirt,#electrician.zap .overall{fill:var(--yellow)}
-#electrician.fixing{animation:hop .4s ease-in-out 3}
+.char.zap .hair,.char.zap .arms-up,.char.zap .sad,.char.zap .brow-sad{display:inline}
+.char.zap .arms-down,.char.zap .happy,.char.zap .brow-happy{display:none}
+.char.zap{animation:shake .08s linear 14}
+.char.zap .shirt,.char.zap .overall{fill:var(--yellow)}
+.char.fixing{animation:hop .4s ease-in-out 3}
 @keyframes shake{0%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}100%{transform:translate(-4px,2px)}}
 @keyframes hop{50%{transform:translateY(-14px)}}
 .bubble{opacity:0;transition:opacity .3s}
@@ -118,11 +118,18 @@ button.b:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .timer.low{background:var(--red);color:#fff}
 .qtext{font-size:1.12rem;line-height:1.5;margin:10px 0 12px;font-weight:700}
 .alts{display:grid;gap:8px}
-.alt{display:flex;gap:10px;align-items:flex-start;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:9px 12px;line-height:1.4}
+.alt{position:relative;overflow:hidden;display:flex;gap:10px;align-items:flex-start;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:9px 12px;line-height:1.4}
+.alt>*{position:relative}
+/* barra de votos: cresce por tras do texto ate a % de quem escolheu a opcao */
+.alt .barra{position:absolute;left:0;top:0;bottom:0;width:0;background:#cfd8e6;transition:width 1.1s cubic-bezier(.2,.8,.3,1)}
+.alt .txt{flex:1}
+.alt .pct{flex:none;align-self:center;font-family:var(--display);font-size:1.6rem;min-width:3.2ch;text-align:right;font-variant-numeric:tabular-nums}
 .alt .k{font-family:var(--display);font-size:1.25rem;width:1.8em;height:1.8em;flex:none;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center}
-.alt.correct{background:#dff5e8;border-color:var(--green)}
-.alt.correct .k{background:var(--green)}
-.alt.wrong{opacity:.6}
+/* a certa fica em verde forte; as outras so mostram a barra */
+.alt.correct{background:#2fb36b;border-color:#0f6b3a;color:#fff;box-shadow:0 0 0 3px #0f6b3a}
+.alt.correct .barra{background:#17834a}
+.alt.correct .k{background:#fff;color:#17834a}
+.alt.correct .why{color:#eafff1}
 .alt .why{display:block;font-size:.88rem;margin-top:3px;color:var(--panel-dark)}
 .box{margin-top:12px;padding:10px 14px;border:3px dashed var(--ink);border-radius:14px;line-height:1.5;background:#fff}
 .box h3{margin:0 0 4px;font-family:var(--display);font-size:1.05rem}
@@ -151,6 +158,62 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink)}
 .quem span.ok{background:#dff5e8;border-color:var(--green)}
 .quem span.nok{background:#ffe3e3;border-color:var(--red);opacity:.8}
 .qhead .dir{display:flex;gap:10px;align-items:center}
+.votos{margin:10px 0 0;font-weight:800;color:var(--panel-dark)}
+.seguindo{font-family:var(--display);font-size:1.2rem;background:var(--ink);color:var(--yellow);border-radius:999px;padding:6px 16px}
+/* ---------- cena do circuito (10 s depois de cada questao) ---------- */
+.cena-palco{position:fixed;inset:0;z-index:7;background:rgba(34,40,58,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+.cena-quadro{width:100%;max-width:1500px;background:var(--paper);border:4px solid var(--ink);border-radius:22px;overflow:hidden;box-shadow:0 10px 0 var(--ink)}
+.cena-topo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 18px;background:var(--ink);color:#fff}
+.cena-topo .num{font-family:var(--display);background:var(--yellow);color:var(--ink);border-radius:999px;padding:2px 14px;font-size:1.1rem}
+.cena-topo b{font-family:var(--display);font-size:clamp(1.6rem,3.4vw,2.6rem);letter-spacing:.05em;animation:entra .8s cubic-bezier(.2,1.4,.4,1)}
+.cena-topo small{font-weight:800;font-size:1.05rem;opacity:.8}
+.cena-topo .res{margin-left:auto;font-family:var(--display);font-size:1.35rem;border-radius:999px;padding:4px 16px;opacity:0;transform:scale(.6);transition:opacity .4s,transform .4s cubic-bezier(.2,1.6,.4,1)}
+.cena-topo .res.ok{background:var(--green)} .cena-topo .res.falha{background:var(--red)}
+.cena-palco.res-on .res{opacity:1;transform:scale(1)}
+@keyframes entra{0%{opacity:0;transform:translateX(-40px)}100%{opacity:1;transform:none}}
+.cena-wrap svg{display:block;width:100%;height:auto;max-height:calc(100vh - 150px)}
+.cena-tempo{height:10px;background:#d8d2c4}
+.cena-tempo span{display:block;height:100%;width:0;background:var(--yellow)}
+.cena-palco.roda .cena-tempo span{width:100%;transition:width 10s linear}
+/* eletricista: entra pela esquerda, sobe na escada se precisar e trabalha */
+.cena-palco .anda{transform:translateX(-140px);transition:transform 1.9s ease-in-out}
+.cena-palco.chegou .anda{transform:translateX(var(--alvo))}
+.cena-palco .sobe{transition:transform .8s ease-in-out}
+.cena-palco.subiu .sobe{transform:translateY(var(--sobe))}
+.cena-palco.andando #elecCena{animation:hop .45s ease-in-out infinite}
+.cena-palco.trabalha #elecCena{animation:mexe .3s ease-in-out infinite}
+.cena-palco.trabalha #elecCena .arms-up,.cena-palco.festa #elecCena .arms-up{display:inline}
+.cena-palco.trabalha #elecCena .arms-down,.cena-palco.festa #elecCena .arms-down{display:none}
+.cena-palco.festa #elecCena{animation:hop .5s ease-in-out infinite}
+@keyframes mexe{50%{transform:translateY(-4px) rotate(2deg)}}
+.cena-palco .fala{opacity:0;transition:opacity .3s}
+.cena-palco.falou .fala{opacity:1}
+/* estados do comodo: antes do conserto, deu certo (.ok) ou deu errado (.falha) */
+.cena-palco .escuro{opacity:.45;transition:opacity 1.2s}
+.cena-palco.ok .escuro{opacity:0}
+.cena-palco .luz-on,.cena-palco .plugue,.cena-palco .vapor,.cena-palco .escudo,.cena-palco .espelho,.cena-palco .fluxo{opacity:0;transition:opacity .6s}
+.cena-palco.ok .luz-on,.cena-palco.ok .plugue,.cena-palco.ok .escudo,.cena-palco.ok .fluxo,.cena-palco.obra .espelho{opacity:1}
+.cena-palco .fios{transition:opacity .5s} .cena-palco.obra .fios{opacity:0}
+.cena-palco .lampada{fill:#d7dde5;transition:fill .4s} .cena-palco.ok .lampada{fill:#ffd23f}
+.cena-palco.falha .lampada{fill:#6b7280;animation:blink .15s steps(2) 6}
+.cena-palco .faisca,.cena-palco .fumaca,.cena-palco .queimado,.cena-palco .trinca,.cena-palco .agua,.cena-palco .so-ok,.cena-palco .so-falha{display:none}
+.cena-palco.falha .faisca{display:inline;animation:flick .2s steps(2) infinite}
+.cena-palco.falha .fumaca{display:inline;animation:smoke 2s ease-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+.cena-palco.falha .queimado,.cena-palco.falha .trinca,.cena-palco.ok .agua,.cena-palco.falha .agua,.cena-palco.ok .so-ok,.cena-palco.falha .so-falha{display:inline}
+.cena-palco.ok .so-antes,.cena-palco.falha .so-antes{display:none}
+.cena-palco .corrente,.cena-palco.ok .fluxo{animation:flow .6s linear infinite}
+.cena-palco.ok .tecla{fill:var(--green)}
+.cena-palco .gota{animation:cai .7s linear infinite}
+@keyframes cai{0%{transform:translateY(0);opacity:1}100%{transform:translateY(150px);opacity:0}}
+.cena-palco.ok .vapor{opacity:1;animation:vapor 2.4s ease-out infinite}
+@keyframes vapor{0%{transform:translateY(20px);opacity:0}40%{opacity:.9}100%{transform:translateY(-60px);opacity:0}}
+.cena-palco .nivel{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(.35);transition:transform 1.6s,fill 1.6s}
+.cena-palco.ok .nivel{transform:scaleY(1.4);fill:var(--red)} .cena-palco.ok .bulbo{fill:var(--red)}
+.cena-palco .alavanca{transform-box:fill-box;transition:transform .35s,fill .35s}
+.cena-palco.ok .alavanca{transform:translateY(18px);fill:var(--red)}
+.cena-palco .fuga{animation:flick .3s steps(2) infinite} .cena-palco.ok .fuga{display:none}
+.cena-palco .janela{fill:#3a4257;transition:fill .8s} .cena-palco.ok .janela{fill:var(--yellow)}
+.cena-palco.falha .cabo{stroke:var(--red);animation:blink .5s steps(2) infinite}
 button.b.inicio{font-size:1.25rem;padding:12px 26px}
 /* relatorio final, projetado para a turma inteira ler */
 .relatorio{position:fixed;inset:0;background:rgba(34,40,58,.75);z-index:12;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -319,11 +382,15 @@ button.b.inicio{font-size:1.25rem;padding:12px 26px}
 </div>
 <div id="fx"></div>
 <div class="contagem-grande" id="contagemGrande" hidden><span></span></div>
+<div class="cena-palco" id="cenaPalco" hidden><div class="cena-quadro">
+  <div class="cena-topo" id="cenaTopo"></div><div class="cena-wrap" id="cenaWrap"></div>
+  <div class="cena-tempo"><span></span></div></div></div>
 <div class="relatorio" id="relatorio" hidden><div class="rel" id="relConteudo"></div></div>
 
 <script src="config.js"></script>
 <script src="sala.js"></script>
 <script src="figuras.js"></script>
+<script src="cenas.js"></script>
 <script>
 /* ---------- estado do modo ao vivo ---------- */
 const COD=Sala.novoCodigo();
@@ -334,6 +401,7 @@ let jogadores={}, respostas={}, aoVivo=false, jaRevelou=false, obsSala=null;
    na ordem em que foi pedido. */
 let comecou=false, contando=false, revelarAgendado=false, salaPronta=false;
 let acabou=false, respostasFinais={};
+let respostasQ={};   /* respostas de cada questao, lidas do banco na hora de revelar */
 let fila=Promise.resolve();
 function enfileira(tarefa,oQue){
   fila=fila.then(tarefa).catch(e=>aviso(oQue+" não chegou aos celulares ("+e.message+").",true));
@@ -394,7 +462,7 @@ function calculaTurma(res,ids){
 
 function meterSVG(m){
   const fixed=st.fixed[m.n], x=62+38.5+77*(m.n-1), y=196;
-  return `<g class="brk ${fixed?"fixed":"broken"}" data-n="${m.n}" role="button" tabindex="0" aria-label="Circuito ${m.n}: ${m.name} ${fixed?"consertado":"com defeito, abrir questão"}" transform="translate(${x},${y})">
+  return `<g class="brk ${fixed?"fixed":"broken"}" data-n="${m.n}" role="button" tabindex="0" aria-label="Circuito ${m.n}: ${m.name} ${fixed?"consertado":"com defeito"}" transform="translate(${x},${y})">
     <circle class="smoke" cx="-6" cy="-8" r="8" fill="#c9ced6"/><circle class="smoke" cx="8" cy="-10" r="7" fill="#c9ced6"/>
     <rect class="bbody" x="-25" y="0" width="50" height="112" rx="6"/>
     <rect x="-16" y="6" width="32" height="10" rx="2" fill="#b9c1cc" stroke="var(--ink)" stroke-width="2"/>
@@ -413,52 +481,50 @@ function openQ(n){
   cur=Q.find(q=>q.n===n); const m=M[n-1];
   $("qtag").textContent=`Questão ${n} · ${cur.lvl}`; $("qtitle").textContent=`Circuito com defeito: ${m.name.toLowerCase()}`;
   $("qtext").textContent=cur.text; $("qfig").innerHTML=cur.fig?(FIGURAS[cur.fig]||""):"";
-  $("alts").innerHTML=cur.alts.map((a,i)=>`<div class="alt" id="alt${i}"><span class="k">${"ABCD"[i]}</span><span>${a[0]}<span class="why" hidden>${a[1]}</span></span></div>`).join("");
+  $("alts").innerHTML=cur.alts.map((a,i)=>`<div class="alt" id="alt${i}"><span class="barra"></span><span class="k">${"ABCD"[i]}</span><span class="txt">${a[0]}<span class="why" hidden>${a[1]}</span></span><span class="pct" hidden></span></div>`).join("");
   $("glossBox").innerHTML=""; $("after").innerHTML="";
-  $("actions").innerHTML=`<button class="b" id="bGl">Consultar glossário</button><button class="b hl" id="bRev">Revelar resposta</button><button class="b" id="bClose">Fechar</button>`;
+  /* ao vivo ninguem pula: a questao so fecha quando o tempo acaba ou quando
+     todo mundo respondeu. Sem celulares, quem apresenta pode revelar antes. */
+  $("actions").innerHTML=`<button class="b" id="bGl">Consultar glossário</button>`+(aoVivo?"":`<button class="b hl" id="bRev">Revelar resposta</button>`);
   $("bGl").onclick=()=>{$("glossBox").innerHTML=`<div class="box"><h3>Glossário · Etapa 1</h3>${cur.gl}</div>`};
-  $("bRev").onclick=reveal; $("bClose").onclick=closeQ;
-  $("stage").hidden=false; jaRevelou=false; revelarAgendado=false; startTimer(cur.t); publicaPergunta(cur,m);
+  if(!aoVivo) $("bRev").onclick=reveal;
+  $("stage").hidden=false; jaRevelou=false; revelarAgendado=false; desenhaPlacar(); startTimer(cur.t); publicaPergunta(cur,m);
 }
-function startTimer(s){clearInterval(tick);left=s;const t=$("timer");t.textContent=left;t.classList.remove("low");
+function startTimer(s){clearInterval(tick);left=s;const t=$("timer");t.hidden=false;t.textContent=left;t.classList.remove("low");
   tick=setInterval(()=>{left--;t.textContent=Math.max(left,0);if(left<=10)t.classList.add("low");
     if(left<=0){clearInterval(tick); if(!jaRevelou&&!$("stage").hidden) reveal();}},1000)}
 async function reveal(){
-  clearInterval(tick); jaRevelou=true; $("contagem").hidden=true;
-  cur.alts.forEach((a,i)=>{const el=$("alt"+i);el.classList.add(i===cur.ok?"correct":"wrong");el.querySelector(".why").hidden=false});
+  if(jaRevelou)return;
+  clearInterval(tick); jaRevelou=true; $("contagem").hidden=true; $("timer").hidden=true; desenhaPlacar();
   /* Le as respostas DIRETO do banco, em vez de usar a ultima copia
      sincronizada: ela pode estar ate 1,5 s atrasada, e quem respondeu nos
-     ultimos segundos antes do "Revelar" perderia o ponto. */
-  let res=respostas[cur.n]||{};
-  if(aoVivo){ try{ res=(await Sala.ler("salas/"+COD+"/respostas/"+cur.n))||{} }catch(e){} }
-  /* pontuacao: 10 pelo acerto + ate 5 de bonus por rapidez */
-  const ganhos={};
-  Object.entries(res).forEach(([id,r])=>{
-    if(r&&r.alt===cur.ok){
-      const frac=1-(r.ms||0)/((cur.t||45)*1000);
-      ganhos[id]=10+Math.max(0,Math.min(5,Math.round(5*frac)));
-    }
+     ultimos segundos perderia o voto. */
+  const q=cur;
+  let res=respostas[q.n]||{};
+  if(aoVivo){ try{ res=(await Sala.ler("salas/"+COD+"/respostas/"+q.n))||{} }catch(e){} }
+  respostasQ[q.n]=res;
+  /* % sobre a turma inteira: quem nao respondeu tambem conta no total */
+  const ids=Object.keys(jogadores), total=ids.length, votos=[0,0,0,0];
+  ids.forEach(id=>{const r=res[id]; if(r&&votos[r.alt]!==undefined) votos[r.alt]++});
+  const pct=votos.map(v=>total?Math.round(100*v/total):0);
+  const responderam=votos.reduce((x,y)=>x+y,0);
+  q.alts.forEach((_,i)=>{
+    const el=$("alt"+i); el.classList.add(i===q.ok?"correct":"wrong");
+    el.querySelector(".why").hidden=false;
+    if(total){ const p=el.querySelector(".pct"); p.hidden=false; p.textContent=pct[i]+"%";
+      el.querySelector(".barra").style.width=pct[i]+"%"; }
   });
-  let quem="";
+  $("after").innerHTML=(total?'<p class="votos">'+responderam+" de "+total+" responderam"+
+      (total>responderam?" · "+(total-responderam)+" sem resposta (conta como erro)":"")+"</p>":"")+
+    '<div class="box"><h3>Resolução · resposta '+"ABCD"[q.ok]+'</h3>'+q.sol+'</div>';
+  /* 7 s com o resultado na tela e segue sozinho para a cena do circuito */
+  let falta=7;
+  $("actions").innerHTML='<span class="seguindo">Circuito '+q.n+' em <b id="seg">'+falta+'</b> s</span>';
+  const cont=setInterval(()=>{ falta--; const e=$("seg"); if(e) e.textContent=Math.max(falta,0); if(falta<=0) clearInterval(cont); },1000);
+  timers.push(setTimeout(()=>{ clearInterval(cont); finish(); },7000));
   if(aoVivo){
-    const lista=Object.entries(jogadores).map(([id,j])=>{
-      const r=res[id], certo=!!(r&&r.alt===cur.ok);
-      const txt=escapar(j.nome||"?")+(r?(certo?" +"+ganhos[id]:" ✗"):" (sem resposta)");
-      return '<span class="'+(r?(certo?"ok":"nok"):"")+'">'+txt+'</span>';
-    }).join("");
-    quem=lista?'<div class="quem">'+lista+'</div>':"";
-  }
-  $("after").innerHTML='<div class="box"><h3>Resolução · resposta '+"ABCD"[cur.ok]+'</h3>'+cur.sol+'</div>'+quem;
-  $("actions").innerHTML='<button class="b go" id="bNext">Consertar circuito e seguir</button>';
-  $("bNext").onclick=finish;
-  if(aoVivo){
-    const n=cur.n, gab=cur.ok, sol=cur.sol;
-    await enfileira(async()=>{
-      for(const par of Object.entries(ganhos)){
-        const atual=(jogadores[par[0]]&&jogadores[par[0]].pontos)||0;
-        await Sala.mesclar("salas/"+COD+"/jogadores/"+par[0],{pontos:atual+par[1]});
-      }
-      await Sala.gravar("salas/"+COD+"/revelado",{n:n,ok:gab,sol:sol,ganhos:ganhos});
+    enfileira(async()=>{
+      await Sala.gravar("salas/"+COD+"/revelado",{n:q.n,ok:q.ok,pct:pct,total:total});
       await Sala.mesclar("salas/"+COD+"/info",{estado:"revelando"});
     },"O resultado");
   }
@@ -529,38 +595,56 @@ function render(){
   $("hint").textContent=acabou?(st.falhou
       ?"A turma ficou abaixo da meta de "+META+"%: o disjuntor geral desarmou e a casa continua no escuro."
       :"Fim de jogo! O relatório da turma está na tela.")
-    :comecou&&aoVivo?"Cada pessoa responde no próprio celular. A casa só volta a ter luz se a turma acertar pelo menos "+META+"% das questões."
+    :comecou&&aoVivo?"Todos respondem a mesma questão no celular. Ela fecha quando o tempo acaba ou quando todos responderem. A casa só volta a ter luz se a turma acertar pelo menos "+META+"% no total."
     :!comecou?(aoVivo?"Espere a turma entrar pelo QR code e clique em Iniciar partida.":"Clique em Iniciar partida para começar.")
-    :done===4?"Falta 1 circuito: quando ele for consertado, o disjuntor geral arma sozinho."
-    :"A próxima questão abre sozinha depois de consertar o circuito.";
+    :"As questões abrem sozinhas, uma depois da outra.";
   atualizaBotaoInicio();
-  document.querySelectorAll(".brk.broken").forEach(g=>{
-    /* no modo ao vivo cada pessoa responde no proprio celular: a tela da
-       sala nao abre questao nenhuma, so acompanha o progresso */
-    const open=()=>{ if(comecou&&!aoVivo) openQ(+g.dataset.n) }; g.onclick=open; g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}};
-  });
 }
 function finish(){
-  const n=cur.n, res=respostas[n]||{};
-  const tot=Object.keys(res).length;
-  const certos=Object.values(res).filter(r=>r&&r.alt===cur.ok).length;
-  const bem = tot===0 ? true : certos*2>=tot;   /* empate conta como acerto da turma */
+  const q=cur, n=q.n, res=respostasQ[n]||{}, ids=Object.keys(jogadores);
+  const certos=ids.filter(id=>res[id]&&res[id].alt===q.ok).length;
+  /* maioria da turma; empate conta como acerto, quem nao respondeu conta como erro */
+  const bem = ids.length===0 ? true : certos*2>=ids.length;
+  const pct = ids.length ? Math.round(100*certos/ids.length) : null;
   closeQ();
-  if(aoVivo)enfileira(async()=>{
-    await Sala.apagar("salas/"+COD+"/pergunta");
-    await Sala.mesclar("salas/"+COD+"/info",{estado:"lobby",circuito:0});
-  },"O fim da questão");
-  const fix=()=>{
-    st.fixed[n]=true; st.last=M[n-1].read;
-    if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/consertados",{[n]:true}),"O conserto do circuito");
+  animaCircuito(n,bem,pct,()=>{
+    if(bem){ st.fixed[n]=true; st.last=M[n-1].read;
+      if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/consertados",{[n]:true}),"O conserto do circuito"); }
     render();
-    if(Object.keys(st.fixed).length===5) timers.push(setTimeout(powerOn,1100));
-    else if(comecou) timers.push(setTimeout(proximoCircuito,1500));
-  };
-  const el=$("electrician");
-  if(bem){ fix(); el.classList.add("fixing"); say("Consertado!",1300); flash("Consertado!"); setTimeout(()=>el.classList.remove("fixing"),1300); }
-  else { el.classList.add("zap"); say("Bzzzt! A maioria errou!",1500); flash("ZZZAP!");
-    setTimeout(()=>{el.classList.remove("zap"); fix(); say("Agora aprendi.",1400);},1500); }
+    if(n<Q.length) openQ(n+1); else encerrar();
+  });
+}
+
+/* Cena de 10 s do circuito n, num comodo da casa (desenhos em cenas.js).
+   bem = a maioria acertou: o eletricista conserta; senao leva o choque. */
+function animaCircuito(n,bem,pct,depois){
+  const c=CENAS[n], m=M[n-1], p=$("cenaPalco");
+  if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/info",
+    {estado:"circuito",circuito:n,circOk:bem,circPct:pct}),"A cena do circuito");
+  $("cenaTopo").innerHTML='<span class="num">Circuito '+n+'</span><b>'+m.name+'</b><small>'+c.comodo+'</small>'+
+    '<span class="res '+(bem?"ok":"falha")+'">'+(pct===null?"":"A turma acertou "+pct+"% ")+(bem?"✔":"✘")+'</span>';
+  const topo=348-c.sobe, frase=bem?c.ok:c.falha;
+  $("cenaWrap").innerHTML='<svg viewBox="0 0 1200 510" role="img" aria-label="Circuito '+n+', '+m.name+': '+frase+'">'+
+    c.desenho()+'<rect class="escuro" width="1200" height="470" fill="#0d1530"/>'+
+    '<g class="anda" style="--alvo:'+c.alvo+'px"><g class="sobe" style="--sobe:'+(-c.sobe)+'px">'+
+      person(Object.assign({},CHARS.elec,{x:0,id:"elecCena"}))+'</g></g>'+c.fx+
+    '<g class="fala" transform="translate('+(c.alvo-360)+','+(topo-96)+')">'+
+      '<rect width="330" height="58" rx="16" fill="#fff" stroke="var(--ink)" stroke-width="4"/>'+
+      '<path d="M300 56 L 340 86 L 270 56" fill="#fff" stroke="var(--ink)" stroke-width="4" stroke-linejoin="round"/>'+
+      '<rect x="268" y="50" width="34" height="8" fill="#fff"/>'+
+      '<text x="165" y="38" text-anchor="middle" font-size="24">'+frase+'</text></g></svg>';
+  p.className="cena-palco"; p.hidden=false; void p.offsetWidth;
+  const T=(ms,f)=>timers.push(setTimeout(f,ms));
+  p.classList.add("roda");
+  T(300,()=>p.classList.add("chegou","andando"));
+  T(2200,()=>{ p.classList.remove("andando"); if(c.sobe) p.classList.add("subiu"); });
+  T(c.sobe?3100:2500,()=>p.classList.add("trabalha","obra"));
+  T(5300,()=>{
+    p.classList.remove("trabalha"); p.classList.add(bem?"ok":"falha","res-on");
+    if(bem) p.classList.add("festa"); else { const e=$("elecCena"); if(e) e.classList.add("zap"); }
+  });
+  T(6300,()=>p.classList.add("falou"));
+  T(10000,()=>{ p.hidden=true; depois(); });
 }
 function powerOn(){
   if(st.powered) return; st.powered=true;
@@ -584,7 +668,8 @@ $("reset").onclick=async()=>{
   ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
   $("mainSwitch").className.baseVal="";$("electrician").classList.remove("zap","fixing");
   cur=null;jaRevelou=false;comecou=false;contando=false;revelarAgendado=false;acabou=false;
-  respostasFinais={};turma=null;escondeContagem();fecharRelatorio();render();
+  respostasFinais={};respostasQ={};turma=null;escondeContagem();fecharRelatorio();
+  closeQ();$("cenaPalco").hidden=true;render();
   if(!aoVivo)return;
   await enfileira(async()=>{
     await Sala.apagar("salas/"+COD+"/respostas");
@@ -592,12 +677,13 @@ $("reset").onclick=async()=>{
     await Sala.apagar("salas/"+COD+"/perguntas");
     await Sala.apagar("salas/"+COD+"/consertados");
     await Sala.apagar("salas/"+COD+"/turma");
+    await Sala.apagar("salas/"+COD+"/pergunta");
+    await Sala.apagar("salas/"+COD+"/revelado");
     for(const id of Object.keys(jogadores))
-      await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0,q:1,terminou:false});
+      await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0});
     await Sala.mesclar("salas/"+COD+"/info",{estado:"lobby",circuito:0,contagem:0});
   },"O placar zerado")
 };
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("stage").hidden)closeQ()});
 /* ---------- comeco da partida ---------- */
 const espera=ms=>new Promise(r=>timers.push(setTimeout(r,ms)));
 function mostraContagem(k){
@@ -615,10 +701,7 @@ function atualizaBotaoInicio(){
   const be=$("encerrar"); if(be) be.hidden=!(aoVivo&&comecou&&!acabou);
   const bv=$("verRel"); if(bv) bv.hidden=!acabou;
 }
-function proximoCircuito(){
-  const falta=M.map(m=>m.n).filter(n=>!st.fixed[n]);
-  if(falta.length) openQ(falta[0]);
-}
+
 async function iniciarPartida(){
   if(contando||comecou)return;
   contando=true; atualizaBotaoInicio();
@@ -626,21 +709,19 @@ async function iniciarPartida(){
   timers.forEach(clearTimeout); clearInterval(kwhTick); $("kwh").textContent="04821"; timers=[];
   st=fresh(); ["s1","s2","s3","powered"].forEach(c=>$("scene").classList.remove(c));
   $("mainSwitch").className.baseVal=""; $("electrician").classList.remove("zap","fixing");
-  cur=null; jaRevelou=false; acabou=false; respostasFinais={}; turma=null;
-  closeQ(); fecharRelatorio(); render();
+  cur=null; jaRevelou=false; acabou=false; respostasFinais={}; respostasQ={}; turma=null;
+  closeQ(); $("cenaPalco").hidden=true; fecharRelatorio(); render();
   if(aoVivo){
     await enfileira(async()=>{
       await Sala.apagar("salas/"+COD+"/respostas");
       await Sala.apagar("salas/"+COD+"/gabarito");
       await Sala.apagar("salas/"+COD+"/consertados");
       await Sala.apagar("salas/"+COD+"/turma");
-      /* as 5 questoes vao para o banco SEM gabarito: cada celular pega a sua */
-      const pacote={};
-      Q.forEach(q=>{pacote[q.n]={n:q.n,circ:M[q.n-1].name,enunciado:q.text,
-        alts:q.alts.map(a=>a[0]),t:q.t,fig:q.fig||null}});
-      await Sala.gravar("salas/"+COD+"/perguntas",pacote);
+      await Sala.apagar("salas/"+COD+"/perguntas");
+      await Sala.apagar("salas/"+COD+"/pergunta");
+      await Sala.apagar("salas/"+COD+"/revelado");
       for(const id of Object.keys(jogadores))
-        await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0,q:1,terminou:false});
+        await Sala.mesclar("salas/"+COD+"/jogadores/"+id,{pontos:0});
     },"O início da partida");
   }
   /* numero da partida: o celular zera as proprias respostas quando ve um novo */
@@ -652,35 +733,15 @@ async function iniciarPartida(){
   }
   escondeContagem();
   comecou=true; contando=false;
-  if(aoVivo){
-    enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"jogando",contagem:0}),"O começo");
-    render();
-  } else {
-    render(); proximoCircuito();   /* sem celulares, o jogo roda na propria tela */
-  }
-}
-
-/* Acompanha a turma: conserta o circuito n quando TODO MUNDO ja passou da
-   questao n (respondendo ou deixando o minuto acabar) e encerra quando
-   todos terminaram. */
-function progressoPartida(){
-  if(!aoVivo||!comecou||acabou)return;
-  const ids=Object.keys(jogadores);
-  if(!ids.length)return;
-  let mudou=false;
-  for(let n=1;n<=5;n++){
-    if(st.fixed[n])continue;
-    const passaram=ids.every(id=>{const j=jogadores[id]||{};return j.terminou||(j.q||1)>n});
-    if(passaram){ st.fixed[n]=true; st.last=M[n-1].read; mudou=true; }
-  }
-  if(mudou)render();
-  if(ids.every(id=>(jogadores[id]||{}).terminou)) encerrar();
+  render(); openQ(1);   /* daqui em diante o jogo segue sozinho, questao por questao */
 }
 
 async function encerrar(){
   if(acabou)return;
   acabou=true;
   $("encerrar").hidden=true;
+  timers.forEach(clearTimeout); timers=[];
+  closeQ(); $("cenaPalco").hidden=true;
   let res={};
   if(aoVivo){ try{ res=(await Sala.ler("salas/"+COD+"/respostas"))||{} }catch(e){} }
   respostasFinais=res;
@@ -798,7 +859,7 @@ async function abrirSala(){
     obsSala=Sala.observar("salas/"+COD,d=>{
       jogadores=(d&&d.jogadores)||{};
       respostas=(d&&d.respostas)||{};
-      desenhaPlacar();atualizaContagem();atualizaBotaoInicio();progressoPartida();
+      desenhaPlacar();atualizaContagem();atualizaBotaoInicio();
     },erroRede,1500);
   }catch(e){
     $("painelSala").hidden=true;
@@ -806,7 +867,7 @@ async function abrirSala(){
     salaPronta=true; render();
   }
 }
-/* Durante a partida a barra mostra PROGRESSO, nunca acerto nem pontuacao:
+/* Durante a partida a barra mostra QUEM JA RESPONDEU a questao da vez, nunca acerto nem pontuacao:
    o resultado so aparece no fim, no relatorio. */
 function desenhaPlacar(){
   const js=Object.entries(jogadores).map(([id,j])=>
@@ -818,8 +879,9 @@ function desenhaPlacar(){
     $("teams").innerHTML=js.map((j,i)=>'<div class="team'+(i===0?" lider":"")+'">'+escapar(j.nome)+"<b>"+j.p+"</b></div>").join("");
   } else if(comecou&&aoVivo){
     js.sort((a,b)=>a.nome.localeCompare(b.nome));
-    $("teams").innerHTML=js.map(j=>'<div class="team'+(j.fim?" lider":"")+'">'+escapar(j.nome)+
-      "<b>"+(j.fim?"✓":Math.min(j.q,5)+"/5")+"</b></div>").join("");
+    const rq=(cur&&!jaRevelou&&respostas[cur.n])||null;
+    $("teams").innerHTML=js.map(j=>{const ja=!!(rq&&rq[j.id]);
+      return '<div class="team'+(ja?" lider":"")+'">'+escapar(j.nome)+"<b>"+(rq?(ja?"✓":"…"):"•")+"</b></div>"}).join("");
   } else {
     js.sort((a,b)=>a.nome.localeCompare(b.nome));
     $("teams").innerHTML=js.map(j=>'<div class="team">'+escapar(j.nome)+"<b>•</b></div>").join("");

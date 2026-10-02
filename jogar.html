@@ -60,6 +60,17 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
 /* a escolhida fica marcada, mas sem dizer se está certa: isso só no fim */
 .alt[aria-pressed=true]{background:var(--yellow);box-shadow:0 0 0 4px var(--ink) inset}
 .alt.apagada{opacity:.4}
+.alt{position:relative;overflow:hidden}
+.alt>*{position:relative}
+.alt .txt{flex:1}
+.alt .barra{position:absolute;left:0;top:0;bottom:0;background:#cfd8e6;animation:cresce 1s cubic-bezier(.2,.8,.3,1)}
+@keyframes cresce{from{width:0}}
+.alt .pct{flex:none;align-self:center;font-family:var(--display);font-size:1.3rem}
+.alt.correct{background:#2fb36b;border-color:#0f6b3a;color:#fff}
+.alt.correct .barra{background:#17834a}
+.alt.correct .k{background:#fff;color:#17834a}
+.alt.minha{box-shadow:0 0 0 4px var(--yellow) inset}
+.alt .voce{display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;opacity:.85}
 .alt:disabled{cursor:default}
 /* cabeçalho da questão */
 .qtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
@@ -124,9 +135,7 @@ let obs = null;
 let etapa = "";         // o que está desenhado agora
 let respondi = {};      // { nQuestao: alternativa }
 let vistaEm = {};       // { nQuestao: quando esta questão apareceu aqui }
-let minhaQ = 1;         // cada pessoa anda no próprio ritmo
-let terminei = false;
-let minhaPartida = 0;   // partida a que respondi/minhaQ/terminei se referem
+let minhaPartida = 0;   // partida a que respondi/vistaEm se referem
 let relogio = null;
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
@@ -135,7 +144,7 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
 /* ---------- memória local (sobrevive a recarregar a página) ---------- */
 const chave = () => `quadro:sala:${sala}`;
 function salvar() {
-  try { localStorage.setItem(chave(), JSON.stringify({ nome: eu.nome, respondi, minhaQ, terminei, partida: minhaPartida })); } catch (e) {}
+  try { localStorage.setItem(chave(), JSON.stringify({ nome: eu.nome, respondi, vistaEm, partida: minhaPartida })); } catch (e) {}
 }
 function carregar() {
   try {
@@ -143,8 +152,7 @@ function carregar() {
     if (v) {
       eu.nome = v.nome || "";
       respondi = v.respondi || {};
-      minhaQ = v.minhaQ || 1;
-      terminei = !!v.terminei;
+      vistaEm = v.vistaEm || {};
       minhaPartida = v.partida || 0;
     }
   } catch (e) {}
@@ -260,23 +268,29 @@ function desenha() {
      na anterior nao vale mais */
   const partida = dados.info.partida || 0;
   if (partida && partida !== minhaPartida) {
-    minhaPartida = partida; respondi = {}; vistaEm = {}; minhaQ = 1; terminei = false;
+    minhaPartida = partida; respondi = {}; vistaEm = {};
     salvar();
   }
-  const marca = [st, dados.info.contagem || 0, minhaQ,
-                 respondi[minhaQ] === undefined ? 0 : 1, terminei ? 1 : 0].join(":");
-  if (marca === etapa) return;               // nada mudou: não redesenha sob o dedo
+  /* A sala manda uma questão por vez e todo mundo responde a mesma.
+     Só redesenha quando muda algo que importa para esta tela. */
+  const q = dados.pergunta || null, n = q ? q.n : 0;
+  const rev = dados.revelado || null;
+  const marca = [st, dados.info.contagem || 0, n, respondi[n] === undefined ? 0 : 1,
+                 rev ? rev.n : 0, dados.info.circuito || 0].join(":");
+  if (marca === etapa) return atualizaQuantos();   // nada mudou: não redesenha sob o dedo
   etapa = marca;
 
-  if (obs) obs.ritmo(st === "contagem" ? 450 : 1500);
+  if (obs) obs.ritmo(st === "contagem" ? 450 : 1000);
 
   const passo = $("#meuPasso");
-  passo.hidden = !(st === "jogando" && !terminei);
-  if (!passo.hidden) passo.textContent = `${minhaQ} de ${TOTAL}`;
+  passo.hidden = !(n && (st === "pergunta" || st === "revelando"));
+  if (!passo.hidden) passo.textContent = `questão ${n} de ${TOTAL}`;
 
   pararRelogio();
   if (st === "contagem") return desenhaContagem(dados.info.contagem);
-  if (st === "jogando") return terminei ? desenhaTerminou() : desenhaQuestao();
+  if (st === "pergunta" && q) return desenhaQuestao(q);
+  if (st === "revelando" && q && rev && rev.n === n) return desenhaRevelado(q, rev);
+  if (st === "circuito") return desenhaCircuito(dados.info);
   if (st === "fim") return desenhaResultado();
   return desenhaEspera();
 }
@@ -298,44 +312,49 @@ function desenhaContagem(n) {
   </div>`;
 }
 
-function desenhaQuestao() {
-  const q = (dados.perguntas || {})[minhaQ];
-  if (!q) { tela.innerHTML = `<div class="card"><p class="aviso">Carregando a questão…</p></div>`; return; }
-  if (!vistaEm[minhaQ]) vistaEm[minhaQ] = Date.now();
-  const escolhi = respondi[minhaQ];
+function desenhaQuestao(q) {
+  const n = q.n;
+  if (!vistaEm[n]) { vistaEm[n] = Date.now(); salvar(); }
+  const escolhi = respondi[n];
   const jaRespondeu = escolhi !== undefined;
-
   const alts = (q.alts || []).map((t, i) => `
     <button class="alt ${jaRespondeu && escolhi !== i ? "apagada" : ""}" data-i="${i}"
             aria-pressed="${escolhi === i ? "true" : "false"}" ${jaRespondeu ? "disabled" : ""}>
-      <span class="k">${"ABCD"[i]}</span><span>${esc(t)}</span>
+      <span class="k">${"ABCD"[i]}</span><span class="txt">${esc(t)}</span>
     </button>`).join("");
 
   tela.innerHTML = `<div class="card">
     <div class="qtop">
-      <div class="tag">Circuito ${esc(q.circ || "")} · questão ${esc(minhaQ)} de ${TOTAL}</div>
+      <div class="tag">Circuito ${esc(q.circ || "")} · questão ${esc(n)} de ${TOTAL}</div>
       <div class="timer" id="t">${esc(q.t || 60)}</div>
     </div>
     <p class="qtexto">${esc(q.enunciado)}</p>
     ${q.fig && window.FIGURAS && FIGURAS[q.fig] ? FIGURAS[q.fig] : ""}
     <div class="alts" id="alts">${alts}</div>
-    <p class="sub" id="status">${jaRespondeu ? "Resposta registrada." : "Toque na alternativa que você acha certa."}</p>
-    <div id="depois">${jaRespondeu ? botaoProxima() : ""}</div>
+    <p class="sub" id="status">${jaRespondeu ? "Resposta registrada. Aguardando a turma…" : "Toque na alternativa que você acha certa."}</p>
+    <p class="sub" id="quantos"></p>
   </div>`;
 
   document.querySelectorAll(".alt").forEach((b) => { b.onclick = () => responder(q, +b.dataset.i); });
-  if (jaRespondeu) ligaProxima();
+  atualizaQuantos();
   iniciaRelogio(q);
 }
 
-/* Sem dizer se acertou: o resultado é só no fim, na tela da sala. */
-const botaoProxima = () => `<div class="espacador"></div>
-  <button class="go" id="prox">${minhaQ >= TOTAL ? "Finalizar ✓" : "Próxima questão →"}</button>`;
-function ligaProxima() { const b = $("#prox"); if (b) b.onclick = proxima; }
+/* "7 de 12 responderam": atualiza no lugar, sem redesenhar a questão */
+function atualizaQuantos() {
+  const el = $("#quantos"), q = dados && dados.pergunta;
+  if (!el || !q) return;
+  const total = Object.keys(dados.jogadores || {}).length;
+  const r = Object.keys(((dados.respostas || {})[q.n]) || {}).length;
+  el.textContent = `${r} de ${total} responderam`;
+}
 
+/* Não existe "pular": depois de responder, espera o tempo acabar ou a
+   turma toda responder. Quem decide a hora de revelar é a tela da sala. */
 async function responder(q, i) {
-  if (respondi[minhaQ] !== undefined) return;
-  respondi[minhaQ] = i;
+  const n = q.n;
+  if (respondi[n] !== undefined || tempoAcabou(n)) return;
+  respondi[n] = i;
   salvar();
   document.querySelectorAll(".alt").forEach((b) => {
     b.disabled = true;
@@ -343,53 +362,65 @@ async function responder(q, i) {
     if (+b.dataset.i !== i) b.classList.add("apagada");
   });
   $("#status").textContent = "Enviando…";
-  const ms = Date.now() - (vistaEm[minhaQ] || Date.now());
+  const ms = Date.now() - (vistaEm[n] || Date.now());
   try {
-    await Sala.gravar(`salas/${sala}/respostas/${minhaQ}/${euId}`, { alt: i, ms });
-    $("#status").textContent = "Resposta registrada.";
-    $("#depois").innerHTML = botaoProxima();
-    ligaProxima();
+    await Sala.gravar(`salas/${sala}/respostas/${n}/${euId}`, { alt: i, ms });
+    $("#status").textContent = "Resposta registrada. Aguardando a turma…";
   } catch (e) {
     $("#status").textContent = "Não saiu. Toque de novo.";
-    delete respondi[minhaQ]; salvar();
+    delete respondi[n]; salvar();
     document.querySelectorAll(".alt").forEach((b) => { b.disabled = false; b.classList.remove("apagada"); });
   }
 }
 
-/* Avança no ritmo de quem joga — pelo botão ou porque o minuto acabou. */
-async function proxima() {
-  pararRelogio();
-  if (minhaQ >= TOTAL) {
-    terminei = true; salvar(); etapa = ""; desenha();
-    try { await Sala.mesclar(`salas/${sala}/jogadores/${euId}`, { terminou: true, q: TOTAL + 1 }); } catch (e) {}
-    return;
-  }
-  minhaQ++; salvar(); etapa = ""; desenha();
-  try { await Sala.mesclar(`salas/${sala}/jogadores/${euId}`, { q: minhaQ }); } catch (e) {}
-}
+const tempoAcabou = (n) => {
+  const q = dados && dados.pergunta;
+  return !!(q && q.n === n && vistaEm[n] && Date.now() - vistaEm[n] >= (q.t || 60) * 1000);
+};
 
 /* O cronômetro conta a partir de quando ESTE celular viu a questão, não do
    relógio do aparelho — se a hora estiver errada, tanto faz. */
 function iniciaRelogio(q) {
-  const total = q.t || 60, meuN = minhaQ, el = $("#t");
+  const total = q.t || 60, n = q.n, el = $("#t");
   const passo = () => {
-    const resta = Math.max(0, total - Math.round((Date.now() - vistaEm[meuN]) / 1000));
+    const resta = Math.max(0, total - Math.round((Date.now() - vistaEm[n]) / 1000));
     if (el) { el.textContent = resta; el.classList.toggle("baixo", resta <= 10); }
-    if (resta <= 0) { pararRelogio(); if (minhaQ === meuN && !terminei) proxima(); }
+    if (resta <= 0) {
+      pararRelogio();
+      if (respondi[n] === undefined) {
+        document.querySelectorAll(".alt").forEach((b) => { b.disabled = true; b.classList.add("apagada"); });
+        const s = $("#status"); if (s) s.textContent = "Tempo esgotado. Aguarde o resultado na tela da sala.";
+      }
+    }
   };
   passo();
   relogio = setInterval(passo, 250);
 }
 function pararRelogio() { if (relogio) { clearInterval(relogio); relogio = null; } }
 
-function desenhaTerminou() {
-  const js = Object.values(dados.jogadores || {});
-  const prontos = js.filter((j) => j.terminou).length;
+/* Resultado da questão: % de cada opção e a certa em verde forte */
+function desenhaRevelado(q, rev) {
+  const minha = respondi[q.n];
+  const pct = rev.pct || [];
+  const alts = (q.alts || []).map((t, i) => `
+    <div class="alt ${i === rev.ok ? "correct" : ""} ${minha === i ? "minha" : ""}">
+      <span class="barra" style="width:${Math.max(0, Math.min(100, +pct[i] || 0))}%"></span>
+      <span class="k">${"ABCD"[i]}</span><span class="txt">${esc(t)}${minha === i ? '<small class="voce">sua resposta</small>' : ""}</span>
+      <span class="pct">${esc(+pct[i] || 0)}%</span>
+    </div>`).join("");
   tela.innerHTML = `<div class="card">
-    <p class="grande">✓</p>
-    <p class="aviso">Você terminou!</p>
-    <p class="sub">Suas ${TOTAL} respostas foram registradas. O resultado aparece na tela da sala quando todo mundo acabar.</p>
-    <p class="sub">${prontos} de ${js.length} já terminaram</p>
+    <div class="qtop"><div class="tag">Circuito ${esc(q.circ || "")} · resultado da questão ${esc(q.n)}</div></div>
+    <div class="alts">${alts}</div>
+    <p class="sub">${minha === undefined ? "Você não respondeu esta." : ""} Olhe a resolução na tela da sala.</p>
+  </div>`;
+}
+
+function desenhaCircuito(info) {
+  const ok = !!info.circOk, pct = info.circPct;
+  tela.innerHTML = `<div class="card" style="text-align:center">
+    <p class="grande">${ok ? "🔧" : "⚡"}</p>
+    <p class="aviso">Circuito ${esc(info.circuito)}: ${ok ? "consertado!" : "deu choque!"}</p>
+    <p class="sub">${pct === null || pct === undefined ? "" : `A turma acertou ${esc(pct)}%. `}Olhe para a tela da sala 👀</p>
   </div>`;
 }
 
