@@ -120,12 +120,14 @@ svg.graf text{font-family:var(--body);font-size:11px;fill:var(--ink);font-weight
 
 <script src="config.js"></script>
 <script src="sala.js"></script>
-<script src="figuras.js"></script>
+<script src="figuras.js?v=4"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const tela = $("#tela");
 const euId = Sala.idJogador();
 const TOTAL = 5;
+const VERSAO = 4;       // tem que ser igual à do index.html
+const salaNaUrl = !!new URLSearchParams(location.search).get("sala");
 
 let sala = null;        // código da sala
 let entrei = false;     // só desenha o jogo depois de registrar o nome
@@ -240,7 +242,42 @@ async function entrar(nome) {
 }
 
 /* ---------- acompanhar a sala ---------- */
+function desatualizado(v) {
+  const p = new URLSearchParams(location.search);
+  if (p.get("v") === String(v)) {
+    tela.innerHTML = `<div class="card"><p class="aviso">Atualize a página</p>
+      <p class="sub">Feche esta aba e abra o link do jogo de novo.</p></div>`;
+    etapa = ""; return;
+  }
+  tela.innerHTML = `<div class="card"><p class="aviso">Atualizando o jogo…</p></div>`;
+  if (obs) obs.parar();
+  location.replace(`jogar.html?sala=${encodeURIComponent(sala)}&v=${encodeURIComponent(v)}`);
+}
+
+/* Se a tela da sala abriu outra sala (outro computador, cache apagado),
+   quem entrou pelo QR code vai junto, desde que ela não esteja no meio
+   de uma partida. Quem digitou um código fica onde está. */
+let seguindo = null;
+function seguirSalaAtiva() {
+  if (seguindo || salaNaUrl) return;
+  seguindo = setInterval(async () => {
+    if (!sala || !eu.nome) return;
+    const st = dados && dados.info ? dados.info.estado : "lobby";
+    if (st !== "lobby" && st !== "fim") return;
+    let a = null;
+    try { a = await Sala.ler("salaAtiva"); } catch (e) { return; }
+    if (!a || !a.codigo || String(a.codigo).toUpperCase() === sala) return;
+    const nome = eu.nome;
+    sala = String(a.codigo).toUpperCase();
+    respondi = {}; vistaEm = {}; minhaPartida = 0; dados = null; etapa = "";
+    carregar(); eu.nome = nome;
+    try { await entrar(nome); } catch (e) {}
+    observar();
+  }, 5000);
+}
+
 function observar() {
+  seguirSalaAtiva();
   if (obs) obs.parar();
   obs = Sala.observar(`salas/${sala}`, (d) => { dados = d; desenha(); }, mostraRede, 1500);
 }
@@ -264,6 +301,15 @@ function desenha() {
     return;
   }
   const st = dados.info.estado || "lobby";
+  /* Página velha no cache do celular não entende a sala nova: recarrega
+     com um endereço novo, que o navegador não tem guardado. */
+  const v = dados.info.versao;
+  if (v && v !== VERSAO) return desatualizado(v);
+  if (!v && st !== "lobby" && st !== "fim") {
+    tela.innerHTML = `<div class="card"><p class="aviso">A tela da sala está com uma versão antiga.</p>
+      <p class="sub">Peça para quem apresenta apertar Ctrl+F5 na tela da sala.</p></div>`;
+    etapa = ""; return;
+  }
   /* Reiniciar na sala comeca uma partida nova: o que este celular respondeu
      na anterior nao vale mais */
   const partida = dados.info.partida || 0;

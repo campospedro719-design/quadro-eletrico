@@ -390,10 +390,25 @@ button.b.inicio{font-size:1.25rem;padding:12px 26px}
 <script src="config.js"></script>
 <script src="sala.js"></script>
 <script src="figuras.js"></script>
-<script src="cenas.js"></script>
+<script src="cenas.js?v=4"></script>
 <script>
 /* ---------- estado do modo ao vivo ---------- */
-const COD=Sala.novoCodigo();
+/* Versao do combinado entre a sala e os celulares. Celular com outra
+   versao (pagina velha no cache) se recarrega sozinho. Mudou o formato
+   do que vai para o banco? Aumente aqui E no jogar.html. */
+const VERSAO=4;
+/* Recarregar a tela da sala (Ctrl+F5) mantem o codigo: senao quem ja
+   entrou ficaria preso numa sala que ninguem mais controla. So vale para
+   recarga recente (15 min sem a pagina aberta); na aula seguinte a sala
+   e nova, sem os nomes de quem testou antes. */
+const COD=(()=>{
+  const k="quadro:salaProjetor", marca=c=>{ try{ localStorage.setItem(k,JSON.stringify({cod:c,em:Date.now()})) }catch(e){} };
+  let c=null;
+  try{ const v=JSON.parse(localStorage.getItem(k)||"null");
+    if(v&&v.cod&&Date.now()-v.em<15*60*1000) c=v.cod; }catch(e){}
+  c=c||Sala.novoCodigo(); marca(c); setInterval(()=>marca(c),60*1000);
+  return c;
+})();
 let jogadores={}, respostas={}, aoVivo=false, jaRevelou=false, obsSala=null;
 /* Fila de escritas. Sem ela, a limpeza de uma questão pode chegar ao banco
    DEPOIS da publicação da questão seguinte e apagá-la — o que faz o celular
@@ -728,7 +743,7 @@ async function iniciarPartida(){
   const partida=Date.now();
   for(let k=5;k>=1;k--){
     mostraContagem(k);
-    if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"contagem",contagem:k,partida}),"A contagem");
+    if(aoVivo)enfileira(()=>Sala.mesclar("salas/"+COD+"/info",{estado:"contagem",contagem:k,partida,versao:VERSAO}),"A contagem");
     await espera(1000);
   }
   escondeContagem();
@@ -851,7 +866,7 @@ async function abrirSala(){
     return;
   }
   try{
-    await Sala.gravar("salas/"+COD+"/info",{estado:"lobby",circuito:0,criada:Date.now()});
+    await Sala.gravar("salas/"+COD+"/info",{estado:"lobby",circuito:0,criada:Date.now(),versao:VERSAO});
     await Sala.gravar("salaAtiva",{codigo:COD,criada:Date.now()});
     aoVivo=true; salaPronta=true;
     $("codigo").textContent=COD;
