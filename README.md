@@ -77,13 +77,15 @@ Abra **`classico.html`**. É a versão original, que roda offline: a turma se di
 
 ## Questões
 
-| Nº | Circuito | Conceitos |
-|---|---|---|
-| 1 | Tomadas | Resistência, resistividade, condutividade |
-| 2 | Iluminação | Gráfico V × i, resistor, efeito Joule, ddp |
-| 3 | Chuveiro | Corrente, carga elétrica, carga elementar |
-| 4 | DR 30 mA | Conservação da carga (lei dos nós) |
-| 5 | Alimentador | Densidade de corrente, condutor, efeito Joule |
+| Nº | Circuito | Conceito explicado | Pergunta | Resposta |
+|---|---|---|---|---|
+| 1 | Tomadas | R = ρ·L/A | Fio de 2,5 mm² ou de 6 mm²: qual tem menor resistência? | 6 mm² |
+| 2 | Iluminação | Resistor ôhmico | No gráfico V × i, qual componente é ôhmico? | Apenas o A (reta) |
+| 3 | Chuveiro | Efeito Joule | O que faz a resistência do chuveiro esquentar a água? | Colisões dos elétrons: energia elétrica vira calor |
+| 4 | DR 30 mA | Lei dos nós | Quando o DR desarma? | Quando volta menos corrente pelo neutro (fuga) |
+| 5 | Alimentador | i = Δq/Δt e P = R·i² | 0,2 Ω, 1200 C em 1 min: qual a potência dissipada? | 80 W |
+
+As questões 1 a 4 são conceituais, sem cálculo. A questão 5 é a única de cálculo.
 
 ## Arquivos
 
